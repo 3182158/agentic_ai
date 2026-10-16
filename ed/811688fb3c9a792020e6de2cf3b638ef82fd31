@@ -1,0 +1,40 @@
+.gitignore
+  s_c74dd8be472484::t_7e11ef40cf255f 11-13
+session-1/demo3_structured_output.py
+  s_c74dd8be472484::t_389aec8cab5084 7-12,36-46,50-71
+  s_c74dd8be472484::t_ed170d6d299990 31
+  s_c74dd8be472484::t_7432a2ca244c6c 1-3,5-6,14-30,32-35,47-49
+  s_c74dd8be472484::t_cc0d020cbe1625 4,13
+session-1/demo2_generate_text.py
+  s_c74dd8be472484::t_be342af15b7429 1-3,5,8,12-15,29,34-35,37-43,46-47,57-58,60-66,68
+  s_c74dd8be472484::t_ed170d6d299990 6-7,9,16-28,30-33,36,44-45,56,59,67,69-71
+  s_c74dd8be472484::t_589705fd9b5bd9 4,10-11
+  s_c74dd8be472484::t_2419c23d0cbe6d 48-55
+.env.example
+  s_c74dd8be472484::t_92b7770b92c4bd 1
+pyproject.toml
+  s_c74dd8be472484::t_8e537b4162148a 10
+  s_c74dd8be472484::t_d17461af40c099 7-9,12-13
+  s_c74dd8be472484::t_f4279ee1e6c849 11
+session-1/demo1_count_tokens.py
+  s_c74dd8be472484::t_4cf0c081a493d1 5-8,10,17-29,31-38,40-41,44,47-50,52-56
+  s_c74dd8be472484::t_75e2eba725b708 1-4,9,11-16,30,39,42-43,45-46,51
+uv.lock
+  s_c74dd8be472484::t_feb9d6e943b404 1-749
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed811688fb3c9a792020e6de2cf3b638ef82fd31",
+  "prompts": {},
+  "sessions": {
+    "s_c74dd8be472484": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "d758b9af-7d35-472b-8d95-78b5e7f7af92",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
