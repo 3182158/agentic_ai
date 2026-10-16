@@ -1,0 +1,18 @@
+.gitignore
+  h_d272402afba5ec 1-10
+.python-version
+  h_d272402afba5ec 1
+pyproject.toml
+  h_d272402afba5ec 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1c9b9efebe8c4f0618be266877aa2e7c0869331e",
+  "prompts": {},
+  "humans": {
+    "h_d272402afba5ec": {
+      "author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
