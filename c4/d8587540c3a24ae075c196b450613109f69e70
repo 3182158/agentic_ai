@@ -1,0 +1,19 @@
+README.md
+  s_c74dd8be472484::t_b079cfc8204382 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c4d8587540c3a24ae075c196b450613109f69e70",
+  "prompts": {},
+  "sessions": {
+    "s_c74dd8be472484": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "d758b9af-7d35-472b-8d95-78b5e7f7af92",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
