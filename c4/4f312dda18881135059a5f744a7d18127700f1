@@ -1,0 +1,14 @@
+docs/enterprise-helpdesk-agent.md
+  h_d272402afba5ec 1-862
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c44f312dda18881135059a5f744a7d18127700f1",
+  "prompts": {},
+  "humans": {
+    "h_d272402afba5ec": {
+      "author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
