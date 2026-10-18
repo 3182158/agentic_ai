@@ -1,0 +1,19 @@
+docs/session-wise-implementation.md
+  s_0100e60d38b735::t_a47215134fdfc6 1-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ece2759514c0122e88e7842698236726c11f4b0",
+  "prompts": {},
+  "sessions": {
+    "s_0100e60d38b735": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "01c5f978-a9b5-44ed-b1ee-bcec2fb90263",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
