@@ -1,0 +1,59 @@
+mock-data/sqlite/schema.sql
+  s_5ef7664de9f515::t_ecfd307364e89c 1-93
+mock-data/documents/policies/travel-and-expenses.md
+  s_5ef7664de9f515::t_12ca2282001cfe 1-2,4-36
+  s_5ef7664de9f515::t_11887442ebc409 3
+mock-data/sqlite/build_database.py
+  s_5ef7664de9f515::t_21c454837f817b 1-46
+mock-data/documents/known-issues/printer-blank-pages.md
+  s_5ef7664de9f515::t_9e0a71bf51beee 1-2,4-24
+  s_5ef7664de9f515::t_11887442ebc409 3
+mock-data/documents/known-issues/vpn-connectivity.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_fc4ceeccc4c6c7 1-2,4-24
+mock-data/documents/known-issues/laptop-hardware.md
+  s_5ef7664de9f515::t_c53f46c19e2bfc 1-2,4-24
+  s_5ef7664de9f515::t_11887442ebc409 3
+mock-data/documents/known-issues/mfa-repeated-prompts.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_0699026730b8f6 1-2,4-24
+mock-data/documents/policies/it-security-policy.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_a6a3c4ebe054ec 1-2,4-40
+mock-data/documents/known-issues/wifi-connectivity.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_4137a3fa010f2f 1-2,4-24
+mock-data/documents/policies/leave-and-time-off.md
+  s_5ef7664de9f515::t_0bbae358ec18bd 1-2,4-36
+  s_5ef7664de9f515::t_11887442ebc409 3
+mock-data/README.md
+  s_5ef7664de9f515::t_baac752c2ee06f 1-62,64-66
+  s_5ef7664de9f515::t_11887442ebc409 63
+mock-data/sqlite/seed.sql
+  s_5ef7664de9f515::t_5d2dfd783fcbdf 1-87
+mock-data/documents/policies/vpn-and-password-faq.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_c168c4f2571f76 1-2,4-37
+mock-data/documents/security-training/poisoned-retrieval-fixture.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_8bf5e0baad5ad6 1-2,4-20
+mock-data/documents/known-issues/email-and-shared-mailbox.md
+  s_5ef7664de9f515::t_11887442ebc409 3
+  s_5ef7664de9f515::t_dc4f6524e580aa 1-2,4-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "faefee4ec32864663131aff1d868bf5b8c347371",
+  "prompts": {},
+  "sessions": {
+    "s_5ef7664de9f515": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a87bce2f-0a27-40c5-89e4-dcb01d63b0ac",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
