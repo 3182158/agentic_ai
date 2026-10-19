@@ -33,9 +33,10 @@ uv run session-1/demo1_count_tokens.py "Your own sentence here"
 uv run session-1/demo2_generate_text.py
 uv run session-1/demo3_structured_output.py
 uv run python agent-system/cli.py
+uv run streamlit run agent-system/streamlit_app.py
 ```
 
-See [agent-system/README.md](agent-system/README.md) for the agent architecture, configuration, sample prompts, security boundaries, and API-key-free tests. Run its tests with `uv run pytest agent-system/tests`.
+The Streamlit app provides a browser-based chat and an interactive walkthrough of the agent's model/tool loop. See [agent-system/README.md](agent-system/README.md) for the agent architecture, configuration, sample prompts, security boundaries, and API-key-free tests. Run its tests with `uv run pytest agent-system/tests`.
 
 ## Notes
 

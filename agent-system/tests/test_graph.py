@@ -5,6 +5,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from config import Settings
 from data.repository import HelpdeskRepository
 from graph.agent import build_agent
+from streamlit_app import _trace_turn
 from build_database import build_database
 
 
@@ -60,3 +61,29 @@ def test_graph_stops_after_model_step_limit(tmp_path: Path) -> None:
 
     assert "reached the limit" in result["messages"][-1].content
     assert model.calls == 1
+
+
+def test_streamlit_trace_reports_live_graph_nodes(tmp_path: Path) -> None:
+    database = tmp_path / "helpdesk.sqlite3"
+    build_database(database)
+    app = build_agent(
+        Settings(database, "E104", "test-model", 4),
+        HelpdeskRepository(database),
+        model=FakeToolCallingModel(),
+    )
+    graph_events = []
+
+    answer, trace, messages = _trace_turn(
+        app,
+        [],
+        "What is the status of INC-1042?",
+        on_graph_event=lambda active, completed, note: graph_events.append(
+            (active, set(completed), note)
+        ),
+    )
+
+    assert "in progress" in answer
+    assert any(active == "tools" for active, _, _ in graph_events)
+    assert graph_events[-1][1] >= {"assistant", "tools", "END"}
+    assert any(event["kind"] == "tool_result" for event in trace)
+    assert messages

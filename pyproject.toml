@@ -7,11 +7,13 @@ requires-python = ">=3.12"
 dependencies = [
     "langchain-openai>=1.0,<2",
     "langgraph>=1.0,<2",
+    "graphviz>=0.20,<1",
     "openai>=3.31.0",
     "pydantic>=2.14.1",
     "prompt-toolkit>=3.0.50,<4",
     "python-dotenv>=1.2.4",
     "rich>=15.0.0",
+    "streamlit>=1.45,<2",
     "tiktoken>=0.14.0",
 ]
 

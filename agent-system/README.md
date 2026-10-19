@@ -44,6 +44,16 @@ From the repository root:
    uv run python agent-system/cli.py
    ```
 
+### Streamlit application
+
+Start the browser-based chat and agent walkthrough from the repository root:
+
+```bash
+uv run streamlit run agent-system/streamlit_app.py
+```
+
+The chat uses the same LangGraph workflow, SQLite repository, read-only tools, and short-term conversation context as the CLI. During a request, **Live agent execution** highlights the active graph node and marks completed nodes; the status line updates as LangGraph emits task events. Expand **Turn trace** under an answer to inspect observable tool requests, arguments, repository results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, database path, and per-turn model-step limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
+
 Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-line message. Prompt history is available while the process is open. Use `/help` to see the built-in commands (`/clear`, `/reset`, `/whoami`, and `/exit`). Tool requests and results are shown in separate, syntax-highlighted panels; agent answers render Markdown. Conversation context, including tool-call messages and observations, lives only in this CLI process and is discarded on exit. There is no checkpointing or durable memory in Session 1.
 
 ## Demo prompts
