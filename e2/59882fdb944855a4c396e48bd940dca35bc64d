@@ -1,0 +1,61 @@
+agent-system/config.py
+  s_8ad0675353d567::t_660868ea98d6fe 1-33
+pyproject.toml
+  s_8ad0675353d567::t_2dc7982e59ac4a 8-9,16-18
+agent-system/tests/test_graph.py
+  s_8ad0675353d567::t_dd94dce3d3c658 1-62
+agent-system/cli.py
+  s_8ad0675353d567::t_9eaf8369072cc4 1-13,17-60,62-67,69-81,83-100
+  s_8ad0675353d567::t_7dfc7521d7a30a 14-16,61,68,82
+README.md
+  s_8ad0675353d567::t_5f665ef8038a45 29,35,38
+  s_8ad0675353d567::t_4ac5e491f0868c 39
+agent-system/tests/conftest.py
+  s_8ad0675353d567::t_271e729bf2e65c 1-8
+agent-system/tests/test_repository.py
+  s_8ad0675353d567::t_74384e88819ff1 65-73
+  s_8ad0675353d567::t_71628fd0bf1034 1-64,74-78
+agent-system/data/__init__.py
+  s_8ad0675353d567::t_310e8bd90d5598 1
+agent-system/data/repository.py
+  s_8ad0675353d567::t_d099461c5f1026 1-7,9-86
+  s_8ad0675353d567::t_7dfc7521d7a30a 8
+agent-system/tools/helpdesk.py
+  s_8ad0675353d567::t_6d651663ce03ec 1-6,8-30
+  s_8ad0675353d567::t_7dfc7521d7a30a 7
+agent-system/domain.py
+  s_8ad0675353d567::t_aa13f62e43a522 1-56
+agent-system/__init__.py
+  s_8ad0675353d567::t_5f2faf6d8fe4c1 1
+agent-system/tests/test_tools.py
+  s_8ad0675353d567::t_474429073e3cc8 1-26
+agent-system/graph/agent.py
+  s_8ad0675353d567::t_7dfc7521d7a30a 13-15
+  s_8ad0675353d567::t_9fd3ff86ee2a7c 1-12,16-78
+.env.example
+  s_8ad0675353d567::t_5f665ef8038a45 2-8
+agent-system/tools/__init__.py
+  s_8ad0675353d567::t_e18b6ba48b1c00 1
+agent-system/graph/__init__.py
+  s_8ad0675353d567::t_7bae4b9045c9f1 1
+agent-system/README.md
+  s_8ad0675353d567::t_4786477ed5a6ae 1-71
+uv.lock
+  s_8ad0675353d567::t_12bdd1bd9c2ebe 10-11,19-23,26-27,35-37,200-217,227-239,253-267,303-311,407-559,598-711,842-857,867-912,1032-1043,1066-1074,1167-1522
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e259882fdb944855a4c396e48bd940dca35bc64d",
+  "prompts": {},
+  "sessions": {
+    "s_8ad0675353d567": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "c6983a12-b1db-471d-8d0c-cda8d795a3cf",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
