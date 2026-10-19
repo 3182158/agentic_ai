@@ -1,0 +1,21 @@
+docs/convert-basic-agent-to-create-agent.md
+  s_c98d1ee95551cc::t_33aa17df7258af 1-168
+agent-system/README.md
+  s_c98d1ee95551cc::t_8255f6005c2baa 57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "506c7ce6286fc5952d34a96ac6f8e8995fc0608d",
+  "prompts": {},
+  "sessions": {
+    "s_c98d1ee95551cc": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "edc39cdf-da89-4b55-996f-dfb8f33a5f70",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
