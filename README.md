@@ -26,12 +26,16 @@ Three standalone demos showing how LLMs work. Output is colored with `rich`.
 | 1 | `session-1/demo1_count_tokens.py` | Text split into tokens, token IDs, per-word token counts, example cost | No |
 | 2 | `session-1/demo2_generate_text.py` | Next-token probabilities, streaming output, temperature effect | Yes |
 | 3 | `session-1/demo3_structured_output.py` | Extracting schema-validated JSON (Pydantic) from an email | Yes |
+| 4 | `agent-system/` | Session 1 LangGraph helpdesk agent with read-only SQLite tools and in-memory conversation context | Yes |
 
 ```bash
 uv run session-1/demo1_count_tokens.py "Your own sentence here"
 uv run session-1/demo2_generate_text.py
 uv run session-1/demo3_structured_output.py
+uv run python agent-system/cli.py
 ```
+
+See [agent-system/README.md](agent-system/README.md) for the agent architecture, configuration, sample prompts, security boundaries, and API-key-free tests. Run its tests with `uv run pytest agent-system/tests`.
 
 ## Notes
 
