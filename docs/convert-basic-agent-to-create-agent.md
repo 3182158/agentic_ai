@@ -1,8 +1,8 @@
-# Evolving the Basic LangGraph Agent to `create_agent`
+# Converting the Basic LangGraph Agent to `create_agent`
 
-This guide describes a staged conversion of the Session 1 custom `StateGraph` to LangChain's built-in `create_agent`. It keeps the existing domain tools, SQLite repository, identity boundary, Streamlit chat, and tests, while moving the standard model/tool loop into the framework.
+This guide documents the Session 1 conversion of the custom `StateGraph` to LangChain's built-in `create_agent`. The conversion keeps the existing domain tools, SQLite repository, identity boundary, Streamlit chat, and tests, while moving the standard model/tool loop into the framework. The implementation and tests are now in place.
 
-> This is an implementation plan, not a code change. Validate the installed LangChain version and middleware behavior before applying it. The project currently depends on `langgraph` and `langchain-openai`; it does not directly declare `langchain`, which provides `create_agent` and its agent middleware.
+`create_agent` and its agent middleware are provided by the direct `langchain` dependency. The app still uses LangGraph underneath, plus `langchain-openai` for the model integration.
 
 ## Why make the change?
 

@@ -1,11 +1,11 @@
-# Session 1: LangGraph Helpdesk Agent
+# Session 1: LangChain Helpdesk Agent
 
-A small, read-only custom agent built on LangGraph. This is the extensible foundation for the later MCP, approvals, specialist routing, RAG, guardrails, and API sessions—not a production service.
+A small, read-only helpdesk agent built with LangChain's `create_agent` and LangGraph underneath. This is the extensible foundation for later MCP, approvals, specialist routing, RAG, guardrails, and API sessions—not a production service.
 
 ## Architecture
 
 ```text
-CLI ──trusted demo identity──▶ LangGraph assistant ⇄ read-only tools
+CLI ──trusted demo identity──▶ LangChain create_agent ⇄ read-only tools
                                       │                     │
                            short-term message list    SQLite repository
                                                             │
@@ -16,7 +16,7 @@ CLI ──trusted demo identity──▶ LangGraph assistant ⇄ read-only tools
 - `domain.py` defines typed contracts independent of the model and database.
 - `data/repository.py` performs parameterized, read-only SQLite queries.
 - `tools/helpdesk.py` exposes typed tools; identity is closed over from application settings, not tool arguments.
-- `graph/agent.py` owns the model/tool loop and its maximum model-call count.
+- `graph/agent.py` builds `create_agent` with model-call and per-tool run limits.
 - `cli.py` displays tool requests and results and carries recent messages between turns in memory.
 - `tests/` tests the repository, identity binding, and graph with a fake model and no API key.
 
@@ -52,9 +52,9 @@ Start the browser-based chat and agent walkthrough from the repository root:
 uv run streamlit run agent-system/streamlit_app.py
 ```
 
-The chat uses the same LangGraph workflow, SQLite repository, read-only tools, and short-term conversation context as the CLI. During a request, **Live agent execution** highlights the active graph node and marks completed nodes; the status line updates as LangGraph emits task events. Expand **Turn trace** under an answer to inspect observable tool requests, arguments, repository results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, database path, and per-turn model-step limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
+The chat uses the same LangChain agent, SQLite repository, read-only tools, and short-term conversation context as the CLI. During a request, **Live agent execution** reflects the built-in model/tools events; expand **Turn trace** under an answer to inspect observable tool requests, arguments, repository results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, database path, and per-turn model-call limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
 
-For a staged migration from this explicit `StateGraph` loop to LangChain's built-in `create_agent`, including per-tool run limits, model-call limits, streaming/UI changes, and the multi-agent evolution path, see [the migration guide](../docs/convert-basic-agent-to-create-agent.md).
+For migration rationale, middleware budgets, streaming behavior, and the multi-agent evolution path, see [the migration guide](../docs/convert-basic-agent-to-create-agent.md).
 
 Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-line message. Prompt history is available while the process is open. Use `/help` to see the built-in commands (`/clear`, `/reset`, `/whoami`, and `/exit`). Tool requests and results are shown in separate, syntax-highlighted panels; agent answers render Markdown. Conversation context, including tool-call messages and observations, lives only in this CLI process and is discarded on exit. There is no checkpointing or durable memory in Session 1.
 

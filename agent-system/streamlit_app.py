@@ -1,4 +1,4 @@
-"""Browser UI for the LangGraph helpdesk agent and its execution trace."""
+"""Browser UI for the LangChain helpdesk agent and its execution trace."""
 
 from __future__ import annotations
 
@@ -98,46 +98,51 @@ def _trace_turn(
     trace: list[dict[str, Any]] = []
     final_answer = ""
     completed_nodes: set[str] = set()
-    active_node: str | None = "assistant"
+    active_node: str | None = "model"
     if on_graph_event:
-        on_graph_event(active_node, completed_nodes, "Starting at assistant node…")
+        on_graph_event(active_node, completed_nodes, "Starting the create_agent model node…")
 
     stream = agent.stream(
-        {"messages": [*prior_messages, HumanMessage(content=prompt)], "model_steps": 0},
+        {"messages": [*prior_messages, HumanMessage(content=prompt)]},
         stream_mode=["updates", "tasks"],
+        version="v2",
     )
     for item in stream:
-        if isinstance(item, tuple) and len(item) == 2:
-            stream_kind, update = item
-        else:
-            stream_kind, update = "updates", item
-
+        if not isinstance(item, dict):
+            continue
+        stream_kind = item.get("type")
+        update = item.get("data")
         if stream_kind == "tasks":
             task_name = update.get("name") if isinstance(update, dict) else None
-            if task_name in {"assistant", "tools", "step_limit"}:
+            if task_name in {"model", "tools"}:
                 # Task events with an input indicate that the node has started.
                 if "input" in update and "result" not in update:
                     active_node = task_name
                     if on_graph_event:
-                        on_graph_event(active_node, completed_nodes, f"Running {task_name.replace('_', ' ')} node…")
+                        on_graph_event(active_node, completed_nodes, f"Running {task_name} node…")
                 elif "result" in update:
                     completed_nodes.add(task_name)
                     active_node = None
                     if on_graph_event:
-                        on_graph_event(None, completed_nodes, f"Completed {task_name.replace('_', ' ')} node.")
+                        on_graph_event(None, completed_nodes, f"Completed {task_name} node.")
             continue
 
-        if not isinstance(update, dict):
+        if stream_kind != "updates" or not isinstance(update, dict):
             continue
         for node_name, node_update in update.items():
-            if node_name in {"assistant", "tools", "step_limit"}:
+            if node_name not in {"model", "tools"} or not isinstance(node_update, dict):
+                continue
+            if node_name in {"model", "tools"}:
                 completed_nodes.add(node_name)
                 active_node = None
                 if on_graph_event:
-                    on_graph_event(None, completed_nodes, f"Completed {node_name.replace('_', ' ')} node.")
+                    on_graph_event(None, completed_nodes, f"Completed {node_name} node.")
             for message in node_update.get("messages", []):
                 turn_messages.append(message)
                 if isinstance(message, AIMessage) and message.tool_calls:
+                    active_node = "tools"
+                    if on_graph_event:
+                        on_graph_event(active_node, completed_nodes, "The model requested a read-only tool.")
                     for tool_call in message.tool_calls:
                         trace.append(
                             {
@@ -149,6 +154,9 @@ def _trace_turn(
                             }
                         )
                 elif isinstance(message, ToolMessage):
+                    active_node = "model"
+                    if on_graph_event:
+                        on_graph_event(active_node, completed_nodes, "Returning the tool result to the model.")
                     trace.append(
                         {
                             "kind": "tool_result",
@@ -160,6 +168,8 @@ def _trace_turn(
                     )
                 elif isinstance(message, AIMessage):
                     final_answer = _content_as_text(message.content)
+                    completed_nodes.add("END")
+                    active_node = None
                     trace.append(
                         {
                             "kind": "model_response",
@@ -193,15 +203,15 @@ def _render_trace(trace: list[dict[str, Any]]) -> None:
 def _render_explainer(employee_id: str, model_name: str, max_model_steps: int) -> None:
     st.subheader("One request, visible end to end")
     st.write(
-        "This app runs the same LangGraph workflow as the command-line demo. It does not expose hidden model reasoning; "
+        "This app uses LangChain's create_agent, which runs on LangGraph like the command-line demo. It does not expose hidden model reasoning; "
         "instead, it shows observable events: tool requests, arguments, tool results, and the final answer."
     )
 
     stages = [
         ("01 · Message", "Your question and recent chat history are sent to the agent. The app supplies the demo identity separately."),
-        ("02 · Assistant node", f"LangGraph calls **{model_name}** with the helpdesk instructions and typed tool definitions."),
+        ("02 · Model node", f"create_agent calls **{model_name}** with the helpdesk instructions and typed tool definitions."),
         ("03 · Tool decision", "The model may request a read-only tool. If no tool is needed, its answer ends the turn. The loop is capped at {0} model calls.".format(max_model_steps)),
-        ("04 · Tool node", "LangGraph executes the requested function. Employee scope is closed over by the application; the model cannot pass a different employee ID."),
+        ("04 · Tool node", "create_agent executes the requested function. Employee scope is closed over by the application; the model cannot pass a different employee ID."),
         ("05 · Repository", "A parameterized, read-only SQLite query returns structured ticket or leave data. The result is added to the conversation."),
         ("06 · Response", "The assistant uses the tool observation to answer. Conversation and traces stay in this browser session only."),
     ]
@@ -250,9 +260,8 @@ def _render_live_graph(
     """Render observable LangGraph node status without exposing model chain-of-thought."""
     nodes = {
         "START": ("START", "circle"),
-        "assistant": ("Assistant model", "box"),
+        "model": ("Model", "box"),
         "tools": ("Read-only tools", "box"),
-        "step_limit": ("Step limit", "box"),
         "END": ("END", "circle"),
     }
     dot = [
@@ -279,13 +288,10 @@ def _render_live_graph(
         )
     dot.extend(
         [
-            '  START -> assistant [label="request"];',
-            '  assistant -> tools [label="tool call"];',
-            '  tools -> assistant [label="observation"];',
-            '  assistant -> END [label="answer"];',
-            '  assistant -> step_limit [label="limit reached"];',
-            '  step_limit -> END [label="stop"];',
-            "  { rank=same; tools; step_limit; }",
+            '  START -> model [label="request"];',
+            '  model -> tools [label="tool call"];',
+            '  tools -> model [label="observation"];',
+            '  model -> END [label="answer or limit"];',
             "}",
         ]
     )
@@ -328,7 +334,7 @@ def main() -> None:
         unsafe_allow_html=True,
     )
     metric_columns = st.columns(3)
-    metric_columns[0].metric("Orchestration", "LangGraph")
+    metric_columns[0].metric("Orchestration", "LangChain agent")
     metric_columns[1].metric("Connected tools", "3 · read-only")
     metric_columns[2].metric("Conversation memory", "This session only")
 
@@ -350,7 +356,7 @@ def main() -> None:
                         graph_slot,
                         graph_note,
                         None,
-                        set(turn.get("graph_completed", {"START", "assistant", "END"})),
+                        set(turn.get("graph_completed", {"START", "model", "END"})),
                         turn.get("graph_note", "Completed graph path for this request."),
                     )
                 with st.expander("Turn trace · inspect the agent's work"):
@@ -377,7 +383,7 @@ def main() -> None:
                     st.markdown("#### Live agent execution")
                     graph_slot = st.empty()
                     graph_note = st.empty()
-                    graph_state = {"active": "assistant", "completed": {"START"}}
+                    graph_state = {"active": "model", "completed": {"START"}}
 
                     def update_graph(active_node: str | None, completed_nodes: set[str], note: str) -> None:
                         graph_state["active"] = active_node
@@ -390,7 +396,7 @@ def main() -> None:
                             note,
                         )
 
-                    update_graph("assistant", graph_state["completed"], "Starting the assistant node…")
+                    update_graph("model", graph_state["completed"], "Starting the model node…")
                     with st.status("Running the helpdesk workflow…", expanded=True) as status:
                         status.write("The assistant is evaluating the request and available tools.")
                         answer, trace, turn_messages = _trace_turn(

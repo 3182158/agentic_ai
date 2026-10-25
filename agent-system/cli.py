@@ -176,10 +176,14 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
         turn_messages = []
         try:
             with console.status("Thinking…", spinner="dots", spinner_style="cyan"):
-                for update in app.stream(
-                    {"messages": history, "model_steps": 0}, stream_mode="updates"
+                for event in app.stream(
+                    {"messages": history}, stream_mode="updates", version="v2"
                 ):
-                    for node_update in update.values():
+                    if event.get("type") != "updates":
+                        continue
+                    for node_update in event["data"].values():
+                        if not isinstance(node_update, dict):
+                            continue
                         for message in node_update.get("messages", []):
                             turn_messages.append(message)
                             if isinstance(message, AIMessage) and message.tool_calls:

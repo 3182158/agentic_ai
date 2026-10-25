@@ -1,1 +1,1 @@
-"""LangGraph orchestration for the single-agent Session 1 workflow."""
+"""LangChain create_agent setup for the Session 1 helpdesk workflow."""
