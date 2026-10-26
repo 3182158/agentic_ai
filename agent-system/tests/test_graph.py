@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from config import Settings
 from data.repository import HelpdeskRepository
 from graph.agent import build_agent
-from streamlit_app import _trace_turn
+from streamlit_app import _run_turn
 from build_database import build_database
 
 
@@ -118,7 +118,7 @@ def test_tool_run_limit_is_scoped_to_each_tool(tmp_path: Path) -> None:
     assert "limit" not in tool_results[3].content.casefold()
 
 
-def test_streamlit_trace_reports_live_graph_nodes(tmp_path: Path) -> None:
+def test_streamlit_turn_preserves_tool_messages_and_followup_context(tmp_path: Path) -> None:
     database = tmp_path / "helpdesk.sqlite3"
     build_database(database)
     app = build_agent(
@@ -126,19 +126,13 @@ def test_streamlit_trace_reports_live_graph_nodes(tmp_path: Path) -> None:
         HelpdeskRepository(database),
         model=FakeToolCallingModel(),
     )
-    graph_events = []
-
-    answer, trace, messages = _trace_turn(
-        app,
-        [],
-        "What is the status of INC-1042?",
-        on_graph_event=lambda active, completed, note: graph_events.append(
-            (active, set(completed), note)
-        ),
-    )
+    answer, messages = _run_turn(app, [], "What is the status of INC-1042?")
 
     assert "in progress" in answer
-    assert any(active == "tools" for active, _, _ in graph_events)
-    assert graph_events[-1][1] >= {"model", "tools", "END"}
-    assert any(event["kind"] == "tool_result" for event in trace)
-    assert messages
+    assert any(getattr(message, "name", None) == "get_ticket_status" for message in messages)
+    assert len([message for message in messages if isinstance(message, HumanMessage)]) == 1
+
+    _, followup_messages = _run_turn(app, messages, "What about its priority?")
+
+    assert followup_messages[:len(messages)] == messages
+    assert len([message for message in followup_messages if isinstance(message, HumanMessage)]) == 2
