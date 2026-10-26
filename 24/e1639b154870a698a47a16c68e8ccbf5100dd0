@@ -1,0 +1,29 @@
+agent-system/cli.py
+  s_8401f2bf657a2f::t_21939878bc933f 24
+docs/convert-basic-agent-to-create-agent.md
+  s_8401f2bf657a2f::t_21939878bc933f 9
+agent-system/README.md
+  s_8401f2bf657a2f::t_21939878bc933f 19
+agent-system/agents/agent.py
+  s_8401f2bf657a2f::t_21939878bc933f 1-50
+agent-system/tests/test_graph.py
+  s_8401f2bf657a2f::t_21939878bc933f 7
+agent-system/streamlit_app.py
+  s_8401f2bf657a2f::t_21939878bc933f 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "24e1639b154870a698a47a16c68e8ccbf5100dd0",
+  "prompts": {},
+  "sessions": {
+    "s_8401f2bf657a2f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "30f3ef2b-f802-44a9-ba12-dc6c468df170",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
