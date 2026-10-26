@@ -1,0 +1,42 @@
+agent-system/memory/service.py
+  s_fa22bfee3a860b::t_f1c839851cd725 1-67
+agent-system/memory/checkpointer.py
+  s_fa22bfee3a860b::t_064a4a2ad1342f 1-17
+agent-system/tests/test_streamlit_app.py
+  s_fa22bfee3a860b::t_c4862847dfd210 10-12,31,33,36-39,42,45,48,51-52,65,71,76
+.gitignore
+  s_fa22bfee3a860b::t_54a82de4772abd 14-16
+agent-system/tests/test_graph.py
+  s_fa22bfee3a860b::t_c4862847dfd210 8-10,123,126,131,133-134,136,138-142,144-150
+pyproject.toml
+  s_fa22bfee3a860b::t_8d132ed8a2de7b 19
+agent-system/memory/__init__.py
+  s_fa22bfee3a860b::t_54ad3b1b605c04 1
+agent-system/tests/test_memory_store.py
+  s_fa22bfee3a860b::t_e9d04f9f4d71a1 1-43,45-53
+  s_fa22bfee3a860b::t_c71004bbbbfcc4 44
+agent-system/cli.py
+  s_fa22bfee3a860b::t_2c508a4bf37c07 25-26,132-136,169-170,180,184-187,197,214-217
+agent-system/streamlit_app.py
+  s_fa22bfee3a860b::t_c71004bbbbfcc4 107
+  s_fa22bfee3a860b::t_c45fa8a214cb80 104-106
+  s_fa22bfee3a860b::t_0eba1b709fe86e 108-110
+uv.lock
+  s_fa22bfee3a860b::t_376f0b28bfd10b 22,43,56-64,638-651,1782-1793
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "37ce07a5cd1f4e705dc56c4b2a1e4efa6489a8d3",
+  "prompts": {},
+  "sessions": {
+    "s_fa22bfee3a860b": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "11617a74-a826-4ecd-9e5a-faa8e6d3f304",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
