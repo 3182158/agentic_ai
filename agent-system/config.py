@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_DATABASE = ROOT_DIR / "mock-data" / "sqlite" / "acme_helpdesk.sqlite3"
+DEFAULT_MEMORY_DATABASE = ROOT_DIR / ".data" / "chat_memory.sqlite3"
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class Settings:
     employee_id: str
     model_name: str
     max_model_steps: int
+    memory_database_path: Path = DEFAULT_MEMORY_DATABASE
 
 
 def get_settings() -> Settings:
@@ -30,4 +32,7 @@ def get_settings() -> Settings:
         employee_id=os.getenv("HELPDESK_DEMO_EMPLOYEE_ID", "E104").strip().upper(),
         model_name=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
         max_model_steps=max(1, int(os.getenv("HELPDESK_MAX_MODEL_STEPS", "6"))),
+        memory_database_path=Path(
+            os.getenv("HELPDESK_MEMORY_DATABASE_PATH", str(DEFAULT_MEMORY_DATABASE))
+        ).expanduser(),
     )

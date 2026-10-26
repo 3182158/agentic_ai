@@ -7,7 +7,9 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 from streamlit.testing.v1 import AppTest
 
-from streamlit_app import _content_as_text, _run_turn, _tracing_enabled
+from streamlit_app import _content_as_text, _tracing_enabled
+from memory.service import ChatService
+from memory.store import ConversationStore
 
 
 @pytest.mark.parametrize("value, enabled", [("true", True), (" TRUE ", True), ("false", False), ("", False)])
@@ -26,25 +28,28 @@ def test_text_content_blocks():
     assert _content_as_text([{"type": "text", "text": "Hello"}, {"type": "text", "text": "there"}]) == "Hello\nthere"
 
 
-def test_empty_model_answer_uses_fallback():
+def test_empty_model_answer_uses_fallback(tmp_path):
     class EmptyAgent:
-        def invoke(self, state):
+        def invoke(self, state, config=None):
             return {"messages": [*state["messages"], AIMessage(content="")]}
 
-    answer, messages = _run_turn(EmptyAgent(), [], "Hello")
-    assert "try again" in answer
-    assert isinstance(messages[0], HumanMessage)
+    service = ChatService(EmptyAgent(), ConversationStore(tmp_path / "m.sqlite3"))
+    thread_id = service.start_conversation("E104")
+    turn = service.send(thread_id, "E104", "Hello")
+    assert "try again" in turn["answer"]
 
 
-def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch):
+def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch, tmp_path):
     monkeypatch.setenv("LANGSMITH_TRACING", "false")
     monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
 
     class FakeAgent:
-        def invoke(self, state):
+        def invoke(self, state, config=None):
             return {"messages": [*state["messages"], AIMessage(content="INC-1042 is in progress.")]}
 
-    monkeypatch.setattr("streamlit_app._build_runtime", lambda *args: FakeAgent())
+    service = ChatService(FakeAgent(), ConversationStore(tmp_path / "memory.sqlite3"))
+    monkeypatch.setattr("streamlit_app._build_runtime", lambda *args: service)
     # Import the module inside the test app so runtime monkeypatches are shared.
     app = AppTest.from_string("from streamlit_app import main\nmain()\n").run()
     assert not app.exception
@@ -57,19 +62,18 @@ def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch):
     next(button for button in app.button if button.label == "Ticket status").click().run()
     assert not app.exception
     assert len(app.chat_message) == 2
-    assert app.session_state["conversation"][0]["answer"] == "INC-1042 is in progress."
+    assert service.store.get_messages(app.session_state["thread_id"], "E104")[1]["content"] == "INC-1042 is in progress."
 
     app.chat_input[0].set_value("What about its priority?").run()
     assert len(app.chat_message) == 4
-    assert len(app.session_state["agent_messages"]) == 4
 
     app.sidebar.text_input[0].set_value("E105").run()
-    assert not app.session_state["conversation"]
+    assert not app.session_state["thread_id"]
     assert len(app.chat_message) == 0
 
     next(button for button in app.button if button.label == "My tickets").click().run()
     next(button for button in app.button if "New conversation" in button.label).click().run()
-    assert not app.session_state["conversation"]
+    assert not app.session_state["thread_id"]
     assert not app.exception
 
 

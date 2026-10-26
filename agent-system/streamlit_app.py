@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
 
 from config import Settings, get_settings
 from data.repository import HelpdeskRepository
 from agents.agent import build_agent
+from memory.checkpointer import create_checkpointer
+from memory.service import ChatService, content_as_text as _content_as_text
+from memory.store import ConversationNotFound, ConversationStore
 
 
 STYLES = """
@@ -50,33 +51,18 @@ STYLES = """
 
 
 @st.cache_resource(show_spinner=False)
-def _build_runtime(database_path: str, employee_id: str, model_name: str, max_model_steps: int):
-    settings = Settings(Path(database_path), employee_id, model_name, max_model_steps)
-    return build_agent(settings, HelpdeskRepository(settings.database_path))
-
-
-def _content_as_text(content: Any) -> str:
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = [
-            str(part["text"])
-            for part in content
-            if isinstance(part, dict) and part.get("type") == "text" and part.get("text")
-        ]
-        return "\n".join(parts) if parts else json.dumps(content, ensure_ascii=False, default=str)
-    return str(content)
-
-
-def _run_turn(agent: Any, prior_messages: list[Any], prompt: str) -> tuple[str, list[Any]]:
-    """Invoke normally so LangSmith owns tracing, not a second UI event collector."""
-    result = agent.invoke({"messages": [*prior_messages, HumanMessage(content=prompt)]})
-    messages = list(result["messages"])
-    if messages and isinstance(messages[-1], AIMessage) and not messages[-1].tool_calls:
-        answer = _content_as_text(messages[-1].content)
-    else:
-        answer = ""
-    return answer or "I couldn't complete that request. Please try again.", messages
+def _build_runtime(
+    database_path: str, employee_id: str, model_name: str, max_model_steps: int, memory_path: str
+) -> ChatService:
+    settings = Settings(
+        Path(database_path), employee_id, model_name, max_model_steps, Path(memory_path)
+    )
+    agent = build_agent(
+        settings,
+        HelpdeskRepository(settings.database_path),
+        checkpointer=create_checkpointer(settings.memory_database_path),
+    )
+    return ChatService(agent, ConversationStore(settings.memory_database_path))
 
 
 def _tracing_enabled() -> bool:
@@ -85,8 +71,43 @@ def _tracing_enabled() -> bool:
 
 
 def _clear_conversation() -> None:
-    st.session_state["agent_messages"] = []
-    st.session_state["conversation"] = []
+    st.session_state["thread_id"] = None
+
+
+def _open_conversation(thread_id: str) -> None:
+    st.session_state["thread_id"] = thread_id
+
+
+def _render_sidebar_history(service: ChatService, user_id: str) -> None:
+    store = service.store
+    st.subheader("Conversations")
+    query = st.text_input("Search conversations", key="search_query").strip()
+    if query:
+        seen: set[str] = set()
+        for hit in store.search(user_id, query):
+            if hit["thread_id"] in seen:
+                continue
+            seen.add(hit["thread_id"])
+            st.button(
+                hit["title"], key=f"hit-{hit['thread_id']}", use_container_width=True,
+                on_click=_open_conversation, args=(hit["thread_id"],),
+            )
+        if not seen:
+            st.caption("No matches.")
+    else:
+        for conversation in store.list_conversations(user_id):
+            st.button(
+                conversation["title"], key=f"conv-{conversation['thread_id']}",
+                use_container_width=True, on_click=_open_conversation,
+                args=(conversation["thread_id"],),
+            )
+    with st.expander("Your usage"):
+        stats = store.analytics(user_id)
+        st.caption(
+            f"{stats['conversations']} conversations · {stats['user_messages']} questions"
+        )
+        if stats["tool_usage"]:
+            st.caption("Tools: " + ", ".join(f"{n} ×{c}" for n, c in stats["tool_usage"].items()))
 
 
 def main() -> None:
@@ -104,28 +125,43 @@ def main() -> None:
         with st.expander("Advanced settings"):
             model_name = st.text_input("Chat model", value=defaults.model_name).strip()
             database_path = st.text_input("SQLite database", value=str(defaults.database_path)).strip()
+            memory_path = st.text_input(
+                "Chat memory database", value=str(defaults.memory_database_path)
+            ).strip()
             max_model_steps = st.slider(
                 "Maximum model calls per turn", min_value=1, max_value=12,
                 value=min(defaults.max_model_steps, 12),
             )
-            st.caption("Changing settings clears the conversation.")
+            st.caption("Changing settings starts a new conversation.")
             st.caption(f"LangSmith tracing: {'enabled' if tracing else 'disabled'} via LANGSMITH_TRACING.")
             if tracing:
                 st.caption("Conversation and tool data may be sent to LangSmith.")
                 st.link_button("Open LangSmith", "https://smith.langchain.com/", use_container_width=True)
 
-    signature = (employee_id, model_name, database_path, max_model_steps)
+    signature = (employee_id, model_name, database_path, memory_path, max_model_steps)
     if st.session_state.get("settings_signature", signature) != signature:
         _clear_conversation()
     st.session_state["settings_signature"] = signature
-    st.session_state.setdefault("agent_messages", [])
-    st.session_state.setdefault("conversation", [])
+    st.session_state.setdefault("thread_id", None)
+
+    service: ChatService | None = None
+    if employee_id and memory_path:
+        service = _build_runtime(database_path, employee_id, model_name, max_model_steps, memory_path)
+        with st.sidebar:
+            _render_sidebar_history(service, employee_id)
+
+    transcript: list[dict[str, Any]] = []
+    if service and st.session_state["thread_id"]:
+        try:
+            transcript = service.store.get_messages(st.session_state["thread_id"], employee_id)
+        except ConversationNotFound:
+            _clear_conversation()
 
     st.title("Enterprise Helpdesk Agent")
     st.caption("Acme Corp · Ticket status, your tickets, and leave balances. Read-only mock data.")
 
     suggested_prompt = None
-    if not st.session_state["conversation"]:
+    if not transcript:
         for column, label, question in zip(
             st.columns(3),
             ("Ticket status", "My tickets", "Leave balance"),
@@ -134,14 +170,12 @@ def main() -> None:
             if column.button(label, use_container_width=True):
                 suggested_prompt = question
 
-    for turn in st.session_state["conversation"]:
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(turn["prompt"])
-        with st.chat_message("assistant", avatar="🤖"):
-            if turn.get("error"):
-                st.error(turn["answer"])
-            else:
-                st.markdown(turn["answer"])
+    for message in transcript:
+        with st.chat_message(message["role"], avatar="👤" if message["role"] == "user" else "🤖"):
+            if message["is_error"]:
+                st.error(message["content"])
+                continue
+            st.markdown(message["content"])
 
     typed_prompt = st.chat_input("Ask about a ticket or your leave balance…")
     prompt = typed_prompt or suggested_prompt
@@ -159,11 +193,10 @@ def main() -> None:
                     raise ValueError("The helpdesk database was not found. Check the path in Advanced settings.")
                 if not os.getenv("OPENAI_API_KEY"):
                     raise ValueError("OPENAI_API_KEY is not configured. Add it to your environment and restart the app.")
+                if not st.session_state["thread_id"]:
+                    st.session_state["thread_id"] = service.start_conversation(employee_id)
                 with st.spinner("Checking your helpdesk records…"):
-                    agent = _build_runtime(database_path, employee_id, model_name, max_model_steps)
-                    answer, messages = _run_turn(agent, st.session_state["agent_messages"], prompt)
-                st.session_state["agent_messages"] = messages
-                st.session_state["conversation"].append({"prompt": prompt, "answer": answer})
+                    service.send(st.session_state["thread_id"], employee_id, prompt)
             except Exception:
                 # Provider exceptions can contain request details; keep them out of the UI.
                 answer = "We couldn't complete your request. Check your model, credentials, and database settings, then try again."
@@ -173,7 +206,10 @@ def main() -> None:
                     answer = "The helpdesk database was not found. Check the path in Advanced settings."
                 elif not os.getenv("OPENAI_API_KEY"):
                     answer = "OPENAI_API_KEY is not configured. Add it to your environment and restart the app."
-                st.session_state["conversation"].append({"prompt": prompt, "answer": answer, "error": True})
+                if service:
+                    if not st.session_state["thread_id"]:
+                        st.session_state["thread_id"] = service.start_conversation(employee_id)
+                    service.record_error(st.session_state["thread_id"], employee_id, prompt, answer)
     st.rerun()
 
 

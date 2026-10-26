@@ -25,6 +25,7 @@ def build_agent(
     repository: HelpdeskRepository | None = None,
     *,
     model=None,
+    checkpointer=None,
 ):
     """Build the workflow; optional model injection enables offline graph tests."""
     repository = repository or HelpdeskRepository(settings.database_path)
@@ -47,4 +48,5 @@ def build_agent(
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
         middleware=middleware,
+        checkpointer=checkpointer,
     )

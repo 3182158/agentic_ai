@@ -22,6 +22,8 @@ from rich.table import Table
 from config import get_settings
 from data.repository import HelpdeskRepository
 from agents.agent import build_agent
+from memory.checkpointer import create_checkpointer
+from memory.store import ConversationStore
 
 console = Console()
 
@@ -127,8 +129,11 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
         return
 
     repository = HelpdeskRepository(settings.database_path)
-    app = build_agent(settings, repository)
-    history: list[HumanMessage | AIMessage | ToolMessage] = []
+    app = build_agent(
+        settings, repository, checkpointer=create_checkpointer(settings.memory_database_path)
+    )
+    store = ConversationStore(settings.memory_database_path)
+    thread_id = store.create_conversation(settings.employee_id)
     prompt_session: PromptSession[str] = PromptSession(
         multiline=True,
         history=InMemoryHistory(),
@@ -161,8 +166,8 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
                 console.clear()
                 _print_banner(settings.employee_id)
             elif name == "reset":
-                history.clear()
-                console.print(Panel("Conversation context cleared.", border_style="yellow"))
+                thread_id = store.create_conversation(settings.employee_id)
+                console.print(Panel("Started a new conversation.", border_style="yellow"))
             elif name == "whoami":
                 console.print(f"Configured demo identity: [bold cyan]{settings.employee_id}[/]")
             else:
@@ -171,13 +176,15 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
                 )
             continue
 
-        history.append(HumanMessage(content=text))
         response_text = ""
-        turn_messages = []
+        tool_names: list[str] = []
         try:
             with console.status("Thinking…", spinner="dots", spinner_style="cyan"):
                 for event in app.stream(
-                    {"messages": history}, stream_mode="updates", version="v2"
+                    {"messages": [HumanMessage(content=text)]},
+                    {"configurable": {"thread_id": thread_id}},
+                    stream_mode="updates",
+                    version="v2",
                 ):
                     if event.get("type") != "updates":
                         continue
@@ -185,9 +192,9 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
                         if not isinstance(node_update, dict):
                             continue
                         for message in node_update.get("messages", []):
-                            turn_messages.append(message)
                             if isinstance(message, AIMessage) and message.tool_calls:
                                 for tool_call in message.tool_calls:
+                                    tool_names.append(tool_call["name"])
                                     args = json.dumps(
                                         tool_call["args"], ensure_ascii=False, indent=2, default=str
                                     )
@@ -202,14 +209,16 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
                                 _print_tool_message(message)
                             elif isinstance(message, AIMessage):
                                 response_text = _content_as_text(message.content)
-            history.extend(turn_messages)
             if not response_text:
                 response_text = "I couldn't complete that request. Please try again."
+            store.add_message(thread_id, settings.employee_id, "user", text)
+            store.add_message(
+                thread_id, settings.employee_id, "assistant", response_text, tool_names=tool_names
+            )
             console.print(
                 Panel(Markdown(response_text), title="Helpdesk Agent", border_style="green", padding=(1, 2))
             )
         except Exception as exc:  # keep the workshop loop alive after provider failures
-            history.pop()
             console.print(
                 Panel(
                     f"{type(exc).__name__}: {exc}",

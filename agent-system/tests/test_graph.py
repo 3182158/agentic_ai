@@ -5,7 +5,9 @@ from langchain_core.messages import AIMessage, HumanMessage
 from config import Settings
 from data.repository import HelpdeskRepository
 from agents.agent import build_agent
-from streamlit_app import _run_turn
+from memory.checkpointer import create_checkpointer
+from memory.service import ChatService
+from memory.store import ConversationStore
 from build_database import build_database
 
 
@@ -118,21 +120,31 @@ def test_tool_run_limit_is_scoped_to_each_tool(tmp_path: Path) -> None:
     assert "limit" not in tool_results[3].content.casefold()
 
 
-def test_streamlit_turn_preserves_tool_messages_and_followup_context(tmp_path: Path) -> None:
+def test_checkpointer_keeps_agent_state_per_thread(tmp_path: Path) -> None:
     database = tmp_path / "helpdesk.sqlite3"
     build_database(database)
+    memory = tmp_path / "memory.sqlite3"
     app = build_agent(
         Settings(database, "E104", "test-model", 4),
         HelpdeskRepository(database),
         model=FakeToolCallingModel(),
+        checkpointer=create_checkpointer(memory),
     )
-    answer, messages = _run_turn(app, [], "What is the status of INC-1042?")
+    service = ChatService(app, ConversationStore(memory))
+    thread_id = service.start_conversation("E104")
 
-    assert "in progress" in answer
-    assert any(getattr(message, "name", None) == "get_ticket_status" for message in messages)
-    assert len([message for message in messages if isinstance(message, HumanMessage)]) == 1
+    turn = service.send(thread_id, "E104", "What is the status of INC-1042?")
 
-    _, followup_messages = _run_turn(app, messages, "What about its priority?")
+    assert "in progress" in turn["answer"]
+    assert turn["tool_names"] == ["get_ticket_status"]
+    state = app.get_state({"configurable": {"thread_id": thread_id}}).values["messages"]
+    assert any(getattr(m, "name", None) == "get_ticket_status" for m in state)
+    assert len([m for m in state if isinstance(m, HumanMessage)]) == 1
 
-    assert followup_messages[:len(messages)] == messages
-    assert len([message for message in followup_messages if isinstance(message, HumanMessage)]) == 2
+    service.send(thread_id, "E104", "What about its priority?")
+    state = app.get_state({"configurable": {"thread_id": thread_id}}).values["messages"]
+    assert len([m for m in state if isinstance(m, HumanMessage)]) == 2
+
+    # Display transcript holds only clean user/assistant text, no tool messages.
+    transcript = service.store.get_messages(thread_id, "E104")
+    assert [m["role"] for m in transcript] == ["user", "assistant"] * 2
