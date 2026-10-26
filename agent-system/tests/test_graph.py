@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from config import Settings
 from data.repository import HelpdeskRepository
-from graph.agent import build_agent
+from agents.agent import build_agent
 from streamlit_app import _run_turn
 from build_database import build_database
 

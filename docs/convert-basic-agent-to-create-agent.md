@@ -6,7 +6,7 @@ This guide documents the Session 1 conversion of the custom `StateGraph` to Lang
 
 ## Why make the change?
 
-The current implementation in `agent-system/graph/agent.py` is valuable for teaching: it explicitly defines the assistant node, tool node, edges, routing, and model-call cap. `create_agent` is itself built on LangGraph, but supplies a standard agent loop and middleware integration so application code can focus on the model, prompt, tools, and policies.
+The current implementation in `agent-system/agents/agent.py` is valuable for teaching: it explicitly defines the assistant node, tool node, edges, routing, and model-call cap. `create_agent` is itself built on LangGraph, but supplies a standard agent loop and middleware integration so application code can focus on the model, prompt, tools, and policies.
 
 | Keep the custom `StateGraph` when… | Prefer `create_agent` when… |
 |---|---|

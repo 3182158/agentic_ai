@@ -21,7 +21,7 @@ from rich.table import Table
 
 from config import get_settings
 from data.repository import HelpdeskRepository
-from graph.agent import build_agent
+from agents.agent import build_agent
 
 console = Console()
 

@@ -12,7 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from config import Settings, get_settings
 from data.repository import HelpdeskRepository
-from graph.agent import build_agent
+from agents.agent import build_agent
 
 
 STYLES = """

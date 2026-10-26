@@ -16,7 +16,7 @@ CLI ──trusted demo identity──▶ LangChain create_agent ⇄ read-only to
 - `domain.py` defines typed contracts independent of the model and database.
 - `data/repository.py` performs parameterized, read-only SQLite queries.
 - `tools/helpdesk.py` exposes typed tools; identity is closed over from application settings, not tool arguments.
-- `graph/agent.py` builds `create_agent` with model-call and per-tool run limits.
+- `agents/agent.py` builds `create_agent` with model-call and per-tool run limits.
 - `cli.py` displays tool requests and results and carries recent messages between turns in memory.
 - `tests/` tests the repository, identity binding, and graph with a fake model and no API key.
 
