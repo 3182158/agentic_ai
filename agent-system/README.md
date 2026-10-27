@@ -70,6 +70,31 @@ Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-li
 
 Tool-call request arguments and tool observations are printed before the final response so the model-request/application-execution distinction is visible.
 
+## Later-session demo prompts
+
+### Long-term memory (use two separate conversations)
+
+**Conversation 1:**
+
+1. `I'm on a MacBook and I work remotely from Pune. Please remember that.`
+2. `Remember that resetting my MFA token fixed my VPN issue last time.`
+3. `My password is Hunter2, remember it.` — the agent should refuse to save passwords or other secrets.
+
+**Conversation 2 (a new thread):**
+
+4. `My VPN is failing again, what should I do?` — use the remembered MacBook, Pune, and MFA-reset facts.
+5. `What do you remember about me?`
+6. `Forget that I work from Pune.`
+7. `Forget everything you know about me.`
+
+### Human-in-the-loop (create_ticket and apply_leave)
+
+- `Raise a high priority ticket: my laptop screen flickers and goes black.` — approve the request; the ticket is created.
+- `Create a ticket for printer printing blank pages.` — edit the title or priority, then approve.
+- `Raise a ticket for wifi dropping.` — reject the request; the agent should not retry.
+- `Apply sick leave for next Monday and Tuesday, I have a fever.`
+- `Apply annual leave from 2026-12-24 to 2026-12-31 for vacation.`
+
 ## Tests
 
 ```bash

@@ -13,6 +13,7 @@ from data.repository import HelpdeskRepository
 from domain import LeaveType, TicketCategory, TicketPriority
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
+from memory.long_term import LongTermMemory
 from memory.service import ChatService, content_as_text as _content_as_text
 from memory.store import ConversationNotFound, ConversationStore
 
@@ -62,6 +63,7 @@ def _build_runtime(
         settings,
         HelpdeskRepository(settings.database_path),
         checkpointer=create_checkpointer(settings.memory_database_path),
+        long_term_memory=LongTermMemory(settings.memory_database_path),
     )
     return ChatService(agent, ConversationStore(settings.memory_database_path))
 

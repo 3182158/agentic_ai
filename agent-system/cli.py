@@ -25,6 +25,7 @@ from data.repository import HelpdeskRepository
 from domain import HelpdeskContext
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
+from memory.long_term import LongTermMemory
 from memory.store import ConversationStore
 
 console = Console()
@@ -211,7 +212,10 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
 
     repository = HelpdeskRepository(settings.database_path)
     app = build_agent(
-        settings, repository, checkpointer=create_checkpointer(settings.memory_database_path)
+        settings,
+        repository,
+        checkpointer=create_checkpointer(settings.memory_database_path),
+        long_term_memory=LongTermMemory(settings.memory_database_path),
     )
     store = ConversationStore(settings.memory_database_path)
     thread_id = store.create_conversation(settings.employee_id)
