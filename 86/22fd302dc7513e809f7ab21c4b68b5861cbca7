@@ -1,0 +1,28 @@
+agent-system/tests/test_graph.py
+  s_7aacccfd275cf3::t_44f8c9de9a3e1c 7,81-84,98-101,117-120
+agent-system/cli.py
+  s_7aacccfd275cf3::t_9f59aca14904ce 24,187
+agent-system/tests/test_streamlit_app.py
+  s_7aacccfd275cf3::t_9f59aca14904ce 33,48
+agent-system/memory/service.py
+  s_7aacccfd275cf3::t_9f59aca14904ce 10,44
+agent-system/domain.py
+  s_7aacccfd275cf3::t_9f59aca14904ce 3,9-13
+  s_7aacccfd275cf3::t_5aa3a10e539e1b 14-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8622fd302dc7513e809f7ab21c4b68b5861cbca7",
+  "prompts": {},
+  "sessions": {
+    "s_7aacccfd275cf3": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "bb5aa622-1d6f-471b-826a-732c0c277f90",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
