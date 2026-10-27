@@ -1,0 +1,29 @@
+agent-system/tools/memory_tools.py
+  s_24d81f3e4dd723::t_67132458ba926c 1-28
+agent-system/tests/test_long_term_memory.py
+  s_24d81f3e4dd723::t_18caf6ac22013f 1-53
+agent-system/memory/long_term.py
+  s_24d81f3e4dd723::t_61dce66b5eba93 1-83
+agent-system/agents/agent.py
+  s_24d81f3e4dd723::t_e97c112f66dd82 11,13,20,22,37-42,50,90-100,104
+agent-system/streamlit_app.py
+  s_24d81f3e4dd723::t_e719b458bda916 16,66
+agent-system/cli.py
+  s_24d81f3e4dd723::t_e719b458bda916 28,215-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "049395c4a34081a846730a47f8f8fb89846d57c1",
+  "prompts": {},
+  "sessions": {
+    "s_24d81f3e4dd723": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "9a5d035d-bf89-46aa-8f41-96cb72e6dd0d",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
