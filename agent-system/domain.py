@@ -1,8 +1,16 @@
 """Stable, typed contracts between helpdesk data, tools, and orchestration."""
 
+from dataclasses import dataclass
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
+
+
+@dataclass(frozen=True)
+class HelpdeskContext:
+    """Trusted per-run context supplied by the application, never by the model."""
+
+    employee_id: str
 
 
 class TicketResult(BaseModel):

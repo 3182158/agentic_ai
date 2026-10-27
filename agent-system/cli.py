@@ -21,6 +21,7 @@ from rich.table import Table
 
 from config import get_settings
 from data.repository import HelpdeskRepository
+from domain import HelpdeskContext
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.store import ConversationStore
@@ -183,6 +184,7 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
                 for event in app.stream(
                     {"messages": [HumanMessage(content=text)]},
                     {"configurable": {"thread_id": thread_id}},
+                    context=HelpdeskContext(employee_id=settings.employee_id),
                     stream_mode="updates",
                     version="v2",
                 ):

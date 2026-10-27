@@ -30,7 +30,7 @@ def test_text_content_blocks():
 
 def test_empty_model_answer_uses_fallback(tmp_path):
     class EmptyAgent:
-        def invoke(self, state, config=None):
+        def invoke(self, state, config=None, context=None):
             return {"messages": [*state["messages"], AIMessage(content="")]}
 
     service = ChatService(EmptyAgent(), ConversationStore(tmp_path / "m.sqlite3"))
@@ -45,7 +45,7 @@ def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch, tmp_path)
     monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
 
     class FakeAgent:
-        def invoke(self, state, config=None):
+        def invoke(self, state, config=None, context=None):
             return {"messages": [*state["messages"], AIMessage(content="INC-1042 is in progress.")]}
 
     service = ChatService(FakeAgent(), ConversationStore(tmp_path / "memory.sqlite3"))

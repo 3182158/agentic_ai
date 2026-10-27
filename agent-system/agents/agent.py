@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 from config import Settings
 from data.repository import HelpdeskRepository
+from domain import HelpdeskContext
 from tools.helpdesk import create_helpdesk_tools
 
 SYSTEM_PROMPT = """You are Acme Corp's friendly internal helpdesk assistant for the signed-in employee.
@@ -29,7 +30,7 @@ def build_agent(
 ):
     """Build the workflow; optional model injection enables offline graph tests."""
     repository = repository or HelpdeskRepository(settings.database_path)
-    tools = create_helpdesk_tools(repository, settings.employee_id)
+    tools = create_helpdesk_tools(repository)
     chat_model = model or ChatOpenAI(model=settings.model_name, temperature=0)
     middleware = [
         ModelCallLimitMiddleware(run_limit=settings.max_model_steps, exit_behavior="end"),
@@ -48,5 +49,6 @@ def build_agent(
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
         middleware=middleware,
+        context_schema=HelpdeskContext,
         checkpointer=checkpointer,
     )

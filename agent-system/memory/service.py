@@ -7,6 +7,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from domain import HelpdeskContext
 from memory.store import ConversationStore
 
 FALLBACK_ANSWER = "I couldn't complete that request. Please try again."
@@ -40,6 +41,7 @@ class ChatService:
         result = self.agent.invoke(
             {"messages": [HumanMessage(content=prompt)]},
             config={"configurable": {"thread_id": thread_id}},
+            context=HelpdeskContext(employee_id=user_id),
         )
         messages = list(result["messages"])
         last_human = max(

@@ -4,6 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from config import Settings
 from data.repository import HelpdeskRepository
+from domain import HelpdeskContext
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.service import ChatService
@@ -77,7 +78,10 @@ def test_graph_executes_tool_and_returns_model_answer(tmp_path: Path) -> None:
     settings = Settings(database, "E104", "test-model", 4)
     app = build_agent(settings, HelpdeskRepository(database), model=model)
 
-    result = app.invoke({"messages": [HumanMessage(content="What is the status of INC-1042?")]})
+    result = app.invoke(
+        {"messages": [HumanMessage(content="What is the status of INC-1042?")]},
+        context=HelpdeskContext(employee_id="E104"),
+    )
 
     assert result["messages"][-1].content == "INC-1042 is in progress with high priority."
     assert model.calls == 2
@@ -91,7 +95,10 @@ def test_graph_stops_after_model_step_limit(tmp_path: Path) -> None:
     settings = Settings(database, "E104", "test-model", 1)
     app = build_agent(settings, HelpdeskRepository(database), model=model)
 
-    result = app.invoke({"messages": [HumanMessage(content="Look up a ticket")]})
+    result = app.invoke(
+        {"messages": [HumanMessage(content="Look up a ticket")]},
+        context=HelpdeskContext(employee_id="E104"),
+    )
 
     assert "Model call limits exceeded" in result["messages"][-1].content
     assert model.calls == 1
@@ -107,7 +114,10 @@ def test_tool_run_limit_is_scoped_to_each_tool(tmp_path: Path) -> None:
         model=RepeatingToolCallingModel(),
     )
 
-    result = app.invoke({"messages": [HumanMessage(content="Look up my helpdesk data")]})
+    result = app.invoke(
+        {"messages": [HumanMessage(content="Look up my helpdesk data")]},
+        context=HelpdeskContext(employee_id="E104"),
+    )
     tool_results = [message for message in result["messages"] if getattr(message, "name", None)]
 
     assert [message.name for message in tool_results] == [
