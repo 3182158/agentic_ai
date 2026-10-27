@@ -33,7 +33,16 @@ def test_tools_do_not_accept_model_selected_employee_identity(tmp_path: Path) ->
     build_database(database)
     tools = {item.name: item for item in create_helpdesk_tools(HelpdeskRepository(database))}
 
-    assert set(tools) == {"get_ticket_status", "list_my_tickets", "check_leave_balance"}
+    assert set(tools) == {
+        "get_ticket_status",
+        "list_my_tickets",
+        "check_leave_balance",
+        "create_ticket",
+        "get_leave_history",
+        "apply_leave",
+    }
+    assert "employee_id" not in tools["apply_leave"].args
+    assert "employee_id" not in tools["create_ticket"].args
     assert "employee_id" not in tools["check_leave_balance"].args
     assert "employee_id" not in tools["list_my_tickets"].args
     assert "runtime" not in tools["get_ticket_status"].tool_call_schema.model_json_schema()["properties"]

@@ -56,6 +56,51 @@ class LeaveBalanceResult(BaseModel):
     message: str | None = None
 
 
+class TicketCreateResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    created: bool
+    ticket_id: str | None = None
+    status: str | None = None
+    message: str
+
+
+class LeaveRequestSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    request_id: str
+    leave_type: str
+    start_date: str
+    end_date: str
+    days: float
+    status: str
+    notes: str
+
+
+class LeaveHistoryResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    requests: list[LeaveRequestSummary]
+    message: str
+
+
+class LeaveApplyResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    created: bool
+    request_id: str | None = None
+    days: float | None = None
+    status: str | None = None
+    message: str
+
+
+LeaveType = Literal["annual", "sick", "carry_forward"]
+TicketCategory = Literal[
+    "VPN", "Network", "Hardware", "Software", "MFA", "Email", "Access", "Printer", "Other"
+]
+TicketPriority = Literal["low", "medium", "high", "urgent"]
+
+
 class ToolObservation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

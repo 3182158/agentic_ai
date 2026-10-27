@@ -8,6 +8,7 @@ import os
 from typing import Sequence
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.types import Command
 from prompt_toolkit import PromptSession
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.history import InMemoryHistory
@@ -77,10 +78,10 @@ def _content_as_text(content: object) -> str:
 def _print_banner(employee_id: str) -> None:
     console.print(
         Panel(
-            f"Signed in as demo employee [bold]{employee_id}[/]. Ask about your tickets or leave balance.\n"
+            f"Signed in as demo employee [bold]{employee_id}[/]. Ask about your tickets or leave balance, or ask to raise a ticket.\n"
             "Submit with [bold]Enter[/]; use [bold]Shift+Enter[/] to add a line.\n"
             "Use [cyan]/help[/] for commands; [cyan]/exit[/] to quit.",
-            title="Acme Helpdesk Agent · Session 1",
+            title="Acme Helpdesk Agent · Session 2",
             border_style="cyan",
             padding=(1, 2),
         )
@@ -113,6 +114,85 @@ def _print_tool_message(message: ToolMessage) -> None:
             word_wrap=True,
         )
     console.print(Panel(body, title=f"Tool result · {message.name or 'tool'}", border_style="green"))
+
+
+def _stream_turn(
+    app, payload: object, thread_id: str, employee_id: str
+) -> tuple[str, list[str]]:
+    """Run or resume the agent, printing tool activity; returns the final text and tool names."""
+    response_text = ""
+    tool_names: list[str] = []
+    with console.status("Thinking…", spinner="dots", spinner_style="cyan"):
+        for event in app.stream(
+            payload,
+            {"configurable": {"thread_id": thread_id}},
+            context=HelpdeskContext(employee_id=employee_id),
+            stream_mode="updates",
+            version="v2",
+        ):
+            if event.get("type") != "updates":
+                continue
+            for node_update in event["data"].values():
+                if not isinstance(node_update, dict):
+                    continue
+                for message in node_update.get("messages", []):
+                    if isinstance(message, AIMessage) and message.tool_calls:
+                        for tool_call in message.tool_calls:
+                            tool_names.append(tool_call["name"])
+                            args = json.dumps(
+                                tool_call["args"], ensure_ascii=False, indent=2, default=str
+                            )
+                            console.print(
+                                Panel(
+                                    Syntax(args, "json", theme="ansi_dark", word_wrap=True),
+                                    title=f"Tool request · {tool_call['name']}",
+                                    border_style="yellow",
+                                )
+                            )
+                    elif isinstance(message, ToolMessage):
+                        _print_tool_message(message)
+                    elif isinstance(message, AIMessage):
+                        response_text = _content_as_text(message.content)
+    return response_text, tool_names
+
+
+def _pending_action(app, thread_id: str) -> dict | None:
+    state = app.get_state({"configurable": {"thread_id": thread_id}})
+    for interrupt in state.interrupts:
+        requests = interrupt.value.get("action_requests", [])
+        if requests:
+            return dict(requests[0])
+    return None
+
+
+def _ask_decision(pending: dict) -> Command:
+    """Prompt for approve/edit/reject; the write cannot run without this answer."""
+    args = dict(pending["args"])
+    console.print(
+        Panel(
+            Syntax(json.dumps(args, ensure_ascii=False, indent=2), "json", theme="ansi_dark"),
+            title=f"Approval required · {pending['name']}",
+            border_style="magenta",
+        )
+    )
+    while True:
+        choice = input("[a]pprove, [e]dit, [r]eject › ").strip().casefold()
+        if choice in {"a", "approve"}:
+            decision: dict = {"type": "approve"}
+        elif choice in {"r", "reject"}:
+            decision = {"type": "reject", "message": "The user rejected this action."}
+        elif choice in {"e", "edit"}:
+            for field in args:
+                value = input(f"{field} [{args[field]}] › ").strip()
+                if value:
+                    args[field] = value
+            decision = {
+                "type": "edit",
+                "edited_action": {"name": pending["name"], "args": args},
+            }
+        else:
+            continue
+        return Command(resume={"decisions": [decision]})
 
 
 def run_chat(employee_id: str | None = None, database_path=None) -> None:
@@ -180,37 +260,15 @@ def run_chat(employee_id: str | None = None, database_path=None) -> None:
         response_text = ""
         tool_names: list[str] = []
         try:
-            with console.status("Thinking…", spinner="dots", spinner_style="cyan"):
-                for event in app.stream(
-                    {"messages": [HumanMessage(content=text)]},
-                    {"configurable": {"thread_id": thread_id}},
-                    context=HelpdeskContext(employee_id=settings.employee_id),
-                    stream_mode="updates",
-                    version="v2",
-                ):
-                    if event.get("type") != "updates":
-                        continue
-                    for node_update in event["data"].values():
-                        if not isinstance(node_update, dict):
-                            continue
-                        for message in node_update.get("messages", []):
-                            if isinstance(message, AIMessage) and message.tool_calls:
-                                for tool_call in message.tool_calls:
-                                    tool_names.append(tool_call["name"])
-                                    args = json.dumps(
-                                        tool_call["args"], ensure_ascii=False, indent=2, default=str
-                                    )
-                                    console.print(
-                                        Panel(
-                                            Syntax(args, "json", theme="ansi_dark", word_wrap=True),
-                                            title=f"Tool request · {tool_call['name']}",
-                                            border_style="yellow",
-                                        )
-                                    )
-                            elif isinstance(message, ToolMessage):
-                                _print_tool_message(message)
-                            elif isinstance(message, AIMessage):
-                                response_text = _content_as_text(message.content)
+            payload: object = {"messages": [HumanMessage(content=text)]}
+            while True:
+                turn_text, turn_tools = _stream_turn(app, payload, thread_id, settings.employee_id)
+                response_text = turn_text or response_text
+                tool_names += turn_tools
+                pending = _pending_action(app, thread_id)
+                if pending is None:
+                    break
+                payload = _ask_decision(pending)
             if not response_text:
                 response_text = "I couldn't complete that request. Please try again."
             store.add_message(thread_id, settings.employee_id, "user", text)

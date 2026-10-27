@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
@@ -45,6 +46,9 @@ def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch, tmp_path)
     monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
 
     class FakeAgent:
+        def get_state(self, config):
+            return SimpleNamespace(interrupts=())
+
         def invoke(self, state, config=None, context=None):
             return {"messages": [*state["messages"], AIMessage(content="INC-1042 is in progress.")]}
 

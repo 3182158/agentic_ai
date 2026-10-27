@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import streamlit as st
 
 from config import Settings, get_settings
 from data.repository import HelpdeskRepository
+from domain import LeaveType, TicketCategory, TicketPriority
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.service import ChatService, content_as_text as _content_as_text
@@ -110,6 +111,55 @@ def _render_sidebar_history(service: ChatService, user_id: str) -> None:
             st.caption("Tools: " + ", ".join(f"{n} ×{c}" for n, c in stats["tool_usage"].items()))
 
 
+def _select(label: str, options: list[str], current: object, default: int = 0) -> str:
+    return st.selectbox(
+        label, options, index=options.index(current) if current in options else default
+    )
+
+
+def _render_approval(service: ChatService, user_id: str, pending: dict[str, Any]) -> None:
+    """Show the drafted write action; nothing is written until the user approves."""
+    args = pending["args"]
+    action = pending["name"]
+    thread_id = st.session_state["thread_id"]
+    with st.chat_message("assistant", avatar="🤖"):
+        if action == "apply_leave":
+            st.markdown("**Approval required: submit this leave request?**")
+        else:
+            st.markdown("**Approval required: create this ticket?**")
+        with st.form("write_approval"):
+            if action == "apply_leave":
+                edited = {
+                    "leave_type": _select("Leave type", list(get_args(LeaveType)), args.get("leave_type")),
+                    "start_date": st.text_input("Start date (YYYY-MM-DD)", value=args.get("start_date", "")).strip(),
+                    "end_date": st.text_input("End date (YYYY-MM-DD)", value=args.get("end_date", "")).strip(),
+                    "reason": st.text_area("Reason", value=args.get("reason", "")).strip(),
+                }
+            else:
+                edited = {
+                    "title": st.text_input("Title", value=args.get("title", "")).strip(),
+                    "description": st.text_area("Description", value=args.get("description", "")).strip(),
+                    "category": _select("Category", list(get_args(TicketCategory)), args.get("category")),
+                    "priority": _select("Priority", list(get_args(TicketPriority)), args.get("priority"), 1),
+                }
+            approve = st.form_submit_button("Approve and submit", type="primary")
+            reject = st.form_submit_button("Reject")
+    if not (approve or reject):
+        return
+    try:
+        if reject:
+            service.resume(thread_id, user_id, "reject")
+        else:
+            service.resume(thread_id, user_id, "approve" if edited == args else "edit", edited)
+    except Exception:
+        service.store.add_message(
+            thread_id, user_id, "assistant",
+            "We couldn't complete the approval. Check the fields and try again.",
+            is_error=True,
+        )
+    st.rerun()
+
+
 def main() -> None:
     st.set_page_config(page_title="Enterprise Helpdesk Agent", page_icon="🎫", layout="wide")
     st.markdown(STYLES, unsafe_allow_html=True)
@@ -151,14 +201,16 @@ def main() -> None:
             _render_sidebar_history(service, employee_id)
 
     transcript: list[dict[str, Any]] = []
+    pending: dict[str, Any] | None = None
     if service and st.session_state["thread_id"]:
         try:
             transcript = service.store.get_messages(st.session_state["thread_id"], employee_id)
+            pending = service.pending_approval(st.session_state["thread_id"], employee_id)
         except ConversationNotFound:
             _clear_conversation()
 
     st.title("Enterprise Helpdesk Agent")
-    st.caption("Acme Corp · Ticket status, your tickets, and leave balances. Read-only mock data.")
+    st.caption("Acme Corp · Ticket status, your tickets, leave balance, history, and ticket or leave requests with your approval.")
 
     suggested_prompt = None
     if not transcript:
@@ -176,6 +228,10 @@ def main() -> None:
                 st.error(message["content"])
                 continue
             st.markdown(message["content"])
+
+    if pending:
+        _render_approval(service, employee_id, pending)
+        return
 
     typed_prompt = st.chat_input("Ask about a ticket or your leave balance…")
     prompt = typed_prompt or suggested_prompt
