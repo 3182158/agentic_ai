@@ -1,0 +1,76 @@
+agent-system/streamlit_app.py
+  s_7aacccfd275cf3::t_ce496c3a7badce 7,120,122,124-125,128-129,146-156,158-162,204,208,232-234
+  s_7aacccfd275cf3::t_7f8693470633fd 13,213
+  s_7aacccfd275cf3::t_2bf82f47dff01d 117-119
+  s_7aacccfd275cf3::t_c1fd325145bbdf 121
+  s_7aacccfd275cf3::t_1813727ac37173 123
+  s_7aacccfd275cf3::t_dbbf7c69b09d52 126-127
+  s_7aacccfd275cf3::t_1513bf02c922cc 130-132,143-145
+  s_7aacccfd275cf3::t_930a5880566518 157
+  s_7aacccfd275cf3::t_a20b6779a744fe 235
+agent-system/cli.py
+  s_7aacccfd275cf3::t_b510da524101f8 11,81,84,119-197
+  s_7aacccfd275cf3::t_dc6e973ed248a3 263-271
+agent-system/data/repository.py
+  s_7aacccfd275cf3::t_f083809b498ede 1,5,12,14,17-21
+  s_7aacccfd275cf3::t_068119f98f3883 100-110,115-120,125-130,133-138,143,157,160-161,166,185,190,209,213,223,225,230,235,243,248-254,256-260,305
+  s_7aacccfd275cf3::t_b098f046dca891 7-9,13,15-16
+  s_7aacccfd275cf3::t_20ffe5046471b4 111-114
+  s_7aacccfd275cf3::t_9e15124c561dd3 121-124
+  s_7aacccfd275cf3::t_2c64326e59776c 131-132
+  s_7aacccfd275cf3::t_ad7fa7aeb40713 139-142
+  s_7aacccfd275cf3::t_392f6b4231f82f 144-146,154-156
+  s_7aacccfd275cf3::t_5a97bbe6a7cf73 158-159
+  s_7aacccfd275cf3::t_3f9df511b7dade 162-165
+  s_7aacccfd275cf3::t_e451c5a76c5f5a 167-169,182-184
+  s_7aacccfd275cf3::t_13617dc6866c36 186-189
+  s_7aacccfd275cf3::t_18dcd47707b2dc 191-193,206-208
+  s_7aacccfd275cf3::t_b49211571f91f7 210-212
+  s_7aacccfd275cf3::t_7711e81e2302cb 214-216,220-222
+  s_7aacccfd275cf3::t_cf844cd1cd83b2 224
+  s_7aacccfd275cf3::t_0f82636f7f6000 226-229
+  s_7aacccfd275cf3::t_406e6f56a4c931 231-234
+  s_7aacccfd275cf3::t_f1b6754bd0cf97 236-238,240-242
+  s_7aacccfd275cf3::t_3d6abcd87d7659 244-247
+  s_7aacccfd275cf3::t_ac0c9e483064d4 255
+  s_7aacccfd275cf3::t_891f3343cc77c4 261-263,302-304
+  s_7aacccfd275cf3::t_6a5bd69d13dfc4 306-308
+agent-system/tests/test_tools.py
+  s_7aacccfd275cf3::t_d414079958d1fa 36-40,43,45
+  s_7aacccfd275cf3::t_a958e5b7f64ebf 41-42,44
+agent-system/tools/helpdesk.py
+  s_7aacccfd275cf3::t_ee66d0225e8c7b 12
+  s_7aacccfd275cf3::t_3834877b010550 5-6,9,37-54
+  s_7aacccfd275cf3::t_9d58a483eeb54f 56-86
+  s_7aacccfd275cf3::t_54c86c204dbcb2 55
+agent-system/memory/service.py
+  s_7aacccfd275cf3::t_90455a07e731fc 9,15,48-91,102-104,111-116
+agent-system/tests/test_streamlit_app.py
+  s_7aacccfd275cf3::t_f8d4cf18f6b36d 5
+  s_7aacccfd275cf3::t_5a5ab25ed2b6b7 49-51
+agent-system/tests/test_hitl.py
+  s_7aacccfd275cf3::t_10341013a78a5e 1-122
+agent-system/domain.py
+  s_7aacccfd275cf3::t_b098f046dca891 68-97
+  s_7aacccfd275cf3::t_f083809b498ede 59-67,98-103
+agent-system/agents/agent.py
+  s_7aacccfd275cf3::t_41bf4eaa9b5f5a 5-6,82
+  s_7aacccfd275cf3::t_ee66d0225e8c7b 22-27,29,59-64,71-75,77
+  s_7aacccfd275cf3::t_3834877b010550 8-12,56-58,65-70,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33f221846711958831f361d221be78daadd227f7",
+  "prompts": {},
+  "sessions": {
+    "s_7aacccfd275cf3": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "bb5aa622-1d6f-471b-826a-732c0c277f90",
+        "model": "copilot/claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
