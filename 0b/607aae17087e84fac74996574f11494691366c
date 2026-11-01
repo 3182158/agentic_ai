@@ -1,0 +1,99 @@
+agent-system/tools/mcp_client.py
+  s_7c7c949d15a0bf::t_5b46dce8efd351 1,6,8,21-23,27-29,38-41,49-50,52,54,57,72-81,84-85,87
+  s_7c7c949d15a0bf::t_dd5608d40ad84c 11,14,18-19,36-37,42-43,51,53,55-56,58-61,64-68,82-83,86,88-92,152-160,162-203
+  s_7c7c949d15a0bf::t_e672f0a358b761 204-254
+  s_7c7c949d15a0bf::t_e9d575372bf58c 161
+agent-system/tests/test_agent_context.py
+  s_7c7c949d15a0bf::t_debdeb5802c36a 1-117
+ticket-and-leave-manager-service/src/ticket_leave_mcp/domain.py
+  s_50e26b0dd3bbbd::t_17a698b6021b6f 1,89-98
+  s_50e26b0dd3bbbd::t_dec169fb5ef013 99-100
+ticket-and-leave-manager-service/src/ticket_leave_mcp/repository.py
+  s_50e26b0dd3bbbd::t_cf3ab78e8ae329 13,160-170
+  s_50e26b0dd3bbbd::t_c61c2660fb6a33 171
+ticket-and-leave-manager-service/tests/test_repository.py
+  s_50e26b0dd3bbbd::t_e2d5fdb3e0b977 1-2,83-110
+  s_50e26b0dd3bbbd::t_c3c82b84627f1f 111-112
+agent-system/streamlit_app.py
+  s_7c7c949d15a0bf::t_6075122f3eae75 21,23-28,186-223
+  s_7c7c949d15a0bf::t_702f3fcd807730 224-225
+  s_7c7c949d15a0bf::t_7fb0599c205ebc 263,271,304-305,311-313
+  s_7c7c949d15a0bf::t_787768d6bd3af6 237-239
+  s_7c7c949d15a0bf::t_4994335c66e869 329-333
+  s_7c7c949d15a0bf::t_635bce509b01f7 22,86-88
+  s_7c7c949d15a0bf::t_35354645f418b0 89-90
+agent-system/tests/test_mcp_prompts.py
+  s_7c7c949d15a0bf::t_47c5ffd8689f32 17,109,111-117,125
+  s_7c7c949d15a0bf::t_6e8c6f8417dd4f 1-16,18-108,110,118-124,126-177
+agent-system/cli.py
+  s_7c7c949d15a0bf::t_ef01f0a90ddac0 8,13,25,27,33,35-40
+  s_7c7c949d15a0bf::t_07b1936ae204e6 112-113,118-173
+  s_7c7c949d15a0bf::t_5b6f87af1425c4 28,34
+  s_7c7c949d15a0bf::t_e7bbe0becc68ae 313,315-322,329-333,355
+  s_7c7c949d15a0bf::t_9390a904863c98 90-91,94,111,292,299,336,342-345
+  s_7c7c949d15a0bf::t_c5caf04e392b02 174-175
+ticket-and-leave-manager-service/tests/test_prompts.py
+  s_7c7c949d15a0bf::t_36b4733e5ec90e 39-48,110-112,114,116,118-121
+  s_7c7c949d15a0bf::t_3084577a699f21 1-38,49-109,113,115,117,122-127
+ticket-and-leave-manager-service/src/ticket_leave_mcp/server.py
+  s_50e26b0dd3bbbd::t_3ce9e99eee5421 1,184-193
+  s_7c7c949d15a0bf::t_5b9b6664b77b31 5-6,27-104,195
+  s_50e26b0dd3bbbd::t_8fcecb25243725 194
+ticket-and-leave-manager-service/README.md
+  s_50e26b0dd3bbbd::t_f917cae513a7bd 3,36-38,40-45
+  s_7c7c949d15a0bf::t_b685b499db517e 39
+  s_50e26b0dd3bbbd::t_8dfb95b28f2e3a 58
+  s_7c7c949d15a0bf::t_62bc7fae531a3d 28
+  s_7c7c949d15a0bf::t_71ce5fb4d56e49 35
+  s_7c7c949d15a0bf::t_f8855a3ee79a7c 26-27,29-34
+  s_50e26b0dd3bbbd::t_f785e7ecaba407 46
+agent-system/domain.py
+  s_7c7c949d15a0bf::t_f75aaca8187715 29-45
+agent-system/tests/test_streamlit_app.py
+  s_7c7c949d15a0bf::t_e63fff098ebec7 20-22,67,151
+  s_7c7c949d15a0bf::t_2dea0ccdac69b7 267-297
+  s_7c7c949d15a0bf::t_44be45ab52584c 66,150
+  s_7c7c949d15a0bf::t_5094857e33c571 160-266,298
+  s_7c7c949d15a0bf::t_2adc17cfa955aa 17
+  s_7c7c949d15a0bf::t_1a3b733f831de0 18-19
+agent-system/tests/test_mcp_profile.py
+  s_7c7c949d15a0bf::t_25cfcee1dab16d 1-106
+agent-system/tests/test_cli.py
+  s_7c7c949d15a0bf::t_8cab5f5bd2c3a6 1-7,12-18,72-128,130-138,140-147,167-223
+  s_7c7c949d15a0bf::t_f0ef1a3a6cc701 129,139,148-166
+agent-system/agents/agent.py
+  s_7c7c949d15a0bf::t_2ca8b4998f4321 68-69,108,112-121,123-124,126
+  s_7c7c949d15a0bf::t_6a2cec5a2c9ecc 18,20,42-56
+  s_7c7c949d15a0bf::t_c6c75dbbc31e79 57
+agent-system/memory/service.py
+  s_7c7c949d15a0bf::t_5de9e4c1dfd75c 39-45,53
+ticket-and-leave-manager-service/tests/test_resources.py
+  s_50e26b0dd3bbbd::t_49d3e637173406 1-100
+agent-system/README.md
+  s_7c7c949d15a0bf::t_996fe71e3e3af9 58-74
+  s_7c7c949d15a0bf::t_b98ae8937ba663 17,75-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b607aae17087e84fac74996574f11494691366c",
+  "prompts": {},
+  "sessions": {
+    "s_50e26b0dd3bbbd": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "048a6ba4-8c37-4653-a659-33e02debb1b3",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    },
+    "s_7c7c949d15a0bf": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "52322037-0824-419a-9d37-51588a254800",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
