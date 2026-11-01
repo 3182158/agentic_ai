@@ -18,7 +18,14 @@ from memory.checkpointer import create_checkpointer
 from memory.long_term import LongTermMemory
 from memory.service import ChatService, content_as_text as _content_as_text
 from memory.store import ConversationNotFound, ConversationStore
-from tools.mcp_client import McpSetupError
+from tools.mcp_client import (
+    EmployeeProfiles,
+    McpPromptError,
+    McpSetupError,
+    get_helpdesk_prompt,
+    list_helpdesk_prompts,
+    prompt_label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +81,11 @@ def _build_runtime(
         long_term_memory=LongTermMemory(settings.memory_database_path),
     )
     return ChatService(agent, ConversationStore(settings.memory_database_path))
+
+
+@st.cache_resource(show_spinner=False)
+def _profiles(url: str, secret: str) -> EmployeeProfiles:
+    return EmployeeProfiles(url, secret)
 
 
 def _tracing_enabled() -> bool:
@@ -171,6 +183,46 @@ def _render_approval(service: ChatService, user_id: str, pending: dict[str, Any]
     st.rerun()
 
 
+def _render_prompt_picker(url: str, secret: str) -> tuple[str, str] | None:
+    """Offer the MCP server's prompt templates; returns (transcript label, text) once one is used."""
+    with st.expander("Prompt templates"):
+        catalog = f"prompt_catalog:{url}"  # fetched once per browser session; reload to refresh
+        if catalog not in st.session_state:
+            try:
+                st.session_state[catalog] = list_helpdesk_prompts(url, secret)
+            except McpPromptError as exc:
+                st.caption(str(exc))
+                return None
+        prompts = {p.name: p for p in st.session_state[catalog]}
+        if not prompts:
+            st.caption("The helpdesk server offers no prompt templates.")
+            return None
+        name = st.selectbox("Template", list(prompts), format_func=lambda n: prompts[n].title or n)
+        prompt = prompts[name]
+        if prompt.description:
+            st.caption(prompt.description)
+        with st.form(f"prompt-form-{name}"):
+            values = {
+                a.name: st.text_input(
+                    a.name + ("" if a.required else " (optional)"), help=a.description
+                ).strip()
+                for a in prompt.arguments or []
+            }
+            submitted = st.form_submit_button("Use template")
+        if not submitted:
+            return None
+        given = {key: value for key, value in values.items() if value}
+        missing = [a.name for a in prompt.arguments or [] if a.required and a.name not in given]
+        if missing:
+            st.error(f"Fill in: {', '.join(missing)}")
+            return None
+        try:
+            return prompt_label(prompt, given), get_helpdesk_prompt(url, secret, name, given)
+        except McpPromptError as exc:
+            st.error(str(exc))
+            return None
+
+
 def main() -> None:
     st.set_page_config(page_title="Enterprise Helpdesk Agent", page_icon="🎫", layout="wide")
     st.markdown(STYLES, unsafe_allow_html=True)
@@ -182,6 +234,9 @@ def main() -> None:
         st.divider()
         employee_id = st.text_input("Demo employee ID", value=defaults.employee_id).strip().upper()
         st.caption("Mock identity · not authentication")
+        profiles = _profiles(defaults.mcp_url, defaults.mcp_secret)
+        if profile := (profiles.get(employee_id) if employee_id else None):
+            st.caption(profile.summary())
         st.button("New conversation", on_click=_clear_conversation, use_container_width=True)
         with st.expander("Advanced settings"):
             model_name = st.text_input("Chat model", value=defaults.model_name).strip()
@@ -205,6 +260,7 @@ def main() -> None:
     st.session_state.setdefault("thread_id", None)
 
     service: ChatService | None = None
+    template: tuple[str, str] | None = None
     if employee_id and memory_path:
         try:
             service = _build_runtime(employee_id, model_name, max_model_steps, memory_path)
@@ -212,6 +268,7 @@ def main() -> None:
             st.error(str(exc))
             st.stop()
         with st.sidebar:
+            template = _render_prompt_picker(defaults.mcp_url, defaults.mcp_secret)
             _render_sidebar_history(service, employee_id)
 
     transcript: list[dict[str, Any]] = []
@@ -244,11 +301,16 @@ def main() -> None:
             st.markdown(message["content"])
 
     if pending:
+        if template:
+            st.warning("Approve or reject the pending request before using a template.")
         _render_approval(service, employee_id, pending)
         return
 
     typed_prompt = st.chat_input("Ask about a ticket or your leave balance…")
     prompt = typed_prompt or suggested_prompt
+    model_text = None
+    if not prompt and template:
+        prompt, model_text = template
     if not prompt:
         return
 
@@ -264,7 +326,11 @@ def main() -> None:
                 if not st.session_state["thread_id"]:
                     st.session_state["thread_id"] = service.start_conversation(employee_id)
                 with st.spinner("Checking your helpdesk records…"):
-                    service.send(st.session_state["thread_id"], employee_id, prompt)
+                    thread_id = st.session_state["thread_id"]
+                    if model_text:
+                        service.send(thread_id, employee_id, model_text, display=prompt)
+                    else:
+                        service.send(thread_id, employee_id, prompt)
             except Exception as exc:
                 # Provider exceptions can contain request details; log them, keep them out of the UI.
                 logger.exception("Chat turn failed")

@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from .domain import (
+    EmployeeProfile,
     LeaveApplyResult,
     LeaveBalanceResult,
     LeaveHistoryResult,
@@ -155,6 +156,18 @@ class HelpdeskRepository:
         return LeaveHistoryResult(
             requests=requests, message=f"Found {len(requests)} leave request(s)."
         )
+
+    def get_my_profile(self, employee_id: str) -> EmployeeProfile | None:
+        """Return the employee's profile, or None when they are not an active employee."""
+        with self._connect() as connection:
+            row = connection.execute(
+                """SELECT e.employee_id, e.full_name, e.department, e.office_location,
+                          m.full_name AS manager_name
+                   FROM employees AS e LEFT JOIN employees AS m ON m.employee_id = e.manager_id
+                   WHERE e.employee_id = ? AND e.active = 1""",
+                (employee_id,),
+            ).fetchone()
+        return EmployeeProfile(**dict(row)) if row else None
 
     def apply_leave(
         self,

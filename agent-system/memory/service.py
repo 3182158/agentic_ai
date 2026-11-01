@@ -36,8 +36,13 @@ class ChatService:
     def start_conversation(self, user_id: str) -> str:
         return self.store.create_conversation(user_id)
 
-    def send(self, thread_id: str, user_id: str, prompt: str) -> dict[str, Any]:
-        """Run a turn and persist display messages; ownership is checked before any work."""
+    def send(
+        self, thread_id: str, user_id: str, prompt: str, *, display: str | None = None
+    ) -> dict[str, Any]:
+        """Run a turn and persist display messages; ownership is checked before any work.
+
+        `prompt` is sent to the model; `display` is what the transcript shows when it differs.
+        """
         self.store.get_conversation(thread_id, user_id)
         # The checkpointer restores prior state for this thread, so only the new message is sent.
         result = self.agent.invoke(
@@ -45,7 +50,7 @@ class ChatService:
             config={"configurable": {"thread_id": thread_id}},
             context=HelpdeskContext(employee_id=user_id),
         )
-        self.store.add_message(thread_id, user_id, "user", prompt)
+        self.store.add_message(thread_id, user_id, "user", display or prompt)
         return self._finish(thread_id, user_id, result)
 
     def pending_approval(self, thread_id: str, user_id: str) -> dict[str, Any] | None:

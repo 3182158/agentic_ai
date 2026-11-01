@@ -1,8 +1,9 @@
-"""FastMCP server exposing ticket and leave tools over streamable HTTP."""
+"""FastMCP server exposing ticket and leave tools, a profile resource and sample prompts over streamable HTTP."""
 
 from __future__ import annotations
 
-from typing import Annotated
+from datetime import date
+from typing import Annotated, get_args
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
@@ -23,6 +24,84 @@ READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
 WRITE = ToolAnnotations(
     readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
 )
+CATEGORIES = ", ".join(get_args(TicketCategory))
+PRIORITIES = ", ".join(get_args(TicketPriority))
+LEAVE_TYPES = ", ".join(get_args(LeaveType))
+
+
+def register_prompts(mcp: FastMCP) -> None:
+    """Offer sample prompt templates a user can pick; they only return text and call nothing."""
+
+    @mcp.prompt(title="Raise an IT ticket")
+    def raise_it_ticket(
+        issue: Annotated[
+            str, Field(description="What is wrong, in the employee's words.", max_length=2000)
+        ],
+        category: Annotated[
+            TicketCategory | None, Field(description=f"Ticket category, if known: {CATEGORIES}.")
+        ] = None,
+    ) -> str:
+        """Draft a helpdesk ticket for a problem, then submit it with create_ticket."""
+        return "\n".join(
+            [
+                f"Employee problem: {issue}",
+                f"Category: {category or 'not given'}",
+                "",
+                "Raise a helpdesk ticket for this problem:",
+                "1. Draft the ticket: a concise title, a description of the problem (facts only; "
+                "never passwords, tokens or one-time codes), a category (the one above if given, "
+                f"otherwise one of {CATEGORIES}) and a priority ({PRIORITIES}; medium unless the "
+                "employee states urgency). Ask for anything required that you cannot infer.",
+                "2. Call create_ticket once with the draft. Do not say the ticket exists until "
+                "the tool result confirms it.",
+            ]
+        )
+
+    @mcp.prompt(title="Request leave")
+    def request_leave(
+        leave_type: Annotated[LeaveType, Field(description=f"One of: {LEAVE_TYPES}.")],
+        when: Annotated[
+            str,
+            Field(description="The dates in their own words, e.g. 'next Friday'.", max_length=100),
+        ],
+        reason: Annotated[
+            str, Field(description="Optional reason for the leave.", max_length=500)
+        ] = "",
+    ) -> str:
+        """Plan a leave request: work out the dates, check the balance, then submit it with apply_leave."""
+        return "\n".join(
+            [
+                f"The employee wants {leave_type} leave: {when}",
+                f"Reason: {reason.strip() or 'none given'}",
+                f"Today's date: {date.today().isoformat()}",
+                "",
+                "Request this leave:",
+                "1. Work out the exact start and end dates (YYYY-MM-DD, inclusive). Ask if they "
+                "are unclear.",
+                "2. Call check_leave_balance. Weekends are not counted; if too few days remain, "
+                "say so instead of submitting.",
+                "3. Call apply_leave once with the exact dates and the reason. Do not say the "
+                "request was submitted until the tool result confirms it.",
+            ]
+        )
+
+    @mcp.prompt(title="Summarize my tickets")
+    def summarize_my_tickets() -> str:
+        """Summarize the signed-in employee's helpdesk tickets using list_my_tickets."""
+        return (
+            "Call list_my_tickets, then summarize the employee's tickets: group them by status, "
+            "call out anything high or urgent, and name the most recently updated ticket. "
+            "Use only what the tool returns. If there are no tickets, say so."
+        )
+
+    @mcp.prompt(title="Leave overview")
+    def leave_overview() -> str:
+        """Summarize the signed-in employee's leave balance and requests."""
+        return (
+            "Call check_leave_balance and get_leave_history, then give a short overview: the "
+            "remaining annual, sick and carry-forward days with the total, and any pending "
+            "requests with their dates. Use only what the tools return."
+        )
 
 
 def create_server(settings: Settings, repository: HelpdeskRepository | None = None) -> FastMCP:
@@ -102,6 +181,18 @@ def create_server(settings: Settings, repository: HelpdeskRepository | None = No
             idempotency_key=idempotency_key_from_headers(request_headers),
         ).model_dump()
 
+    # No parameters on purpose: FastMCP registers a resource function that takes any (even a
+    # Context) as a template, which hides it from resources/list. The employee comes from the
+    # token, so neither the URI nor the function accepts an employee ID.
+    @mcp.resource("employee://me/profile", title="My employee profile", mime_type="application/json")
+    def my_profile() -> str:
+        """The signed-in employee's name, department, office and manager. Taken from the bearer token; no employee ID is accepted."""
+        profile = repository.get_my_profile(employee(mcp.get_context()))
+        if profile is None:
+            raise ValueError("No active employee for this token.")
+        return profile.model_dump_json()
+
+    register_prompts(mcp)
     return mcp
 
 

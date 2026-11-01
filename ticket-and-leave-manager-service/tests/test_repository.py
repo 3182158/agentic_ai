@@ -1,3 +1,5 @@
+import sqlite3
+from contextlib import closing
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -76,6 +78,36 @@ def test_leave_balance_handles_employee_with_no_remaining_days(
 
     assert result.found is True
     assert result.total_remaining == 0
+
+
+def test_profile_includes_the_managers_name(repository: HelpdeskRepository) -> None:
+    profile = repository.get_my_profile("E104")
+
+    assert profile is not None
+    assert (profile.full_name, profile.department, profile.office_location) == (
+        "Asha Raman",
+        "Engineering",
+        "Seattle",
+    )
+    assert profile.manager_name == "Meera Patel"
+
+
+def test_profile_has_no_manager_at_the_top_of_the_chain(repository: HelpdeskRepository) -> None:
+    profile = repository.get_my_profile("E101")
+
+    assert profile is not None
+    assert profile.manager_name is None
+
+
+def test_profile_is_none_for_unknown_and_inactive_employees(
+    repository: HelpdeskRepository,
+) -> None:
+    with closing(sqlite3.connect(repository.database_path)) as connection:
+        connection.execute("UPDATE employees SET active = 0 WHERE employee_id = 'E105'")
+        connection.commit()
+
+    assert repository.get_my_profile("E999") is None
+    assert repository.get_my_profile("E105") is None
 
 
 def test_repository_rejects_missing_database(tmp_path: Path) -> None:

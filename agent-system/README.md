@@ -14,7 +14,7 @@ CLI ──trusted demo identity──▶ LangChain create_agent ⇄ tools discov
 
 - `config.py` loads model, MCP connection, demo-identity, and step-limit settings.
 - `domain.py` defines typed contracts shared by the agent and its UI.
-- `tools/mcp_client.py` loads the helpdesk tools straight from the ticket-and-leave MCP server. Names, descriptions and schemas come from the server; nothing is redefined here, and identity is supplied per call from the runtime context, never by the model.
+- `tools/mcp_client.py` loads the helpdesk tools straight from the ticket-and-leave MCP server. Names, descriptions and schemas come from the server; nothing is redefined here, and identity is supplied per call from the runtime context, never by the model. It also lists and renders the server's prompt templates for the CLI and the Streamlit app, and reads the signed-in employee's profile resource.
 - `agents/agent.py` builds `create_agent` with model-call and per-tool run limits.
 - `cli.py` displays tool requests and results and carries recent messages between turns in memory.
 - `tests/` tests tool loading, identity binding, approvals, and the graph against the real MCP service on a local port, using a fake model and no API key.
@@ -55,7 +55,32 @@ The chat uses the same LangChain agent, MCP tools, and short-term conversation c
 
 For migration rationale, middleware budgets, streaming behavior, and the multi-agent evolution path, see [the migration guide](../docs/convert-basic-agent-to-create-agent.md).
 
-Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-line message. Prompt history is available while the process is open. Use `/help` to see the built-in commands (`/clear`, `/reset`, `/whoami`, and `/exit`). Tool requests and results are shown in separate, syntax-highlighted panels; agent answers render Markdown. Conversation context, including tool-call messages and observations, lives only in this CLI process and is discarded on exit. There is no checkpointing or durable memory in Session 1.
+Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-line message. Prompt history is available while the process is open. Use `/help` to see the built-in commands (`/clear`, `/reset`, `/whoami`, `/prompts`, `/prompt`, and `/exit`). Tool requests and results are shown in separate, syntax-highlighted panels; agent answers render Markdown. Conversation context, including tool-call messages and observations, lives only in this CLI process and is discarded on exit. There is no checkpointing or durable memory in Session 1.
+
+## Prompt templates
+
+The MCP service also offers prompt templates (see its [Prompts](../ticket-and-leave-manager-service/README.md#prompts) section). The user picks a template, not the model: the app fetches its rendered text and sends it as your message, so the agent's system prompt, tool limits and approval step all still apply. Template arguments are plain text you type; none is an employee ID.
+
+- **CLI:** `/prompts` lists the templates and their arguments. `/prompt <name> key=value ...` runs one and shows the rendered text before the agent answers. Quote values that contain spaces:
+
+  ```text
+  /prompt summarize_my_tickets
+  /prompt request_leave leave_type=annual when="next Friday" reason="Family event"
+  /prompt raise_it_ticket issue="VPN drops every ten minutes" category=VPN
+  ```
+
+- **Streamlit:** open **Prompt templates** in the sidebar, pick a template, fill in its fields and choose **Use template**. The transcript and conversation title show a short label such as `Raise an IT ticket: issue=VPN drops…`; the model receives the full text. The list loads once per browser session, so reload the page after the server's prompts change.
+
+Templates are discovered from the server, so a new server-side prompt needs no change here. The app fetches them as the `helpdesk-agent` service identity and signs a fresh 60-second token for every request, because the app runs far longer than one token lives.
+
+## Employee profile
+
+The MCP service also offers the signed-in employee's directory profile (name, department, office and manager) as a resource; see its [Resources](../ticket-and-leave-manager-service/README.md#resources) section. The model never calls a resource, so the app reads it and decides where it goes:
+
+- **Agent context:** the profile is added to the system prompt as untrusted data, not instructions, so the agent can address you by name or mention your office. The employee ID is not sent to the model. The profile sits next to saved memories in one prompt.
+- **CLI:** the banner and `/whoami` show it. **Streamlit:** the sidebar shows it under the demo employee ID.
+
+The server returns the profile of whoever the token names, so the app signs a fresh 60-second token for the employee; the service identity used for tools and prompts is refused. Profiles are kept per employee for five minutes, and a failed read is retried after 30 seconds. The agent works without a profile, for example for a demo ID that is not an active employee.
 
 ## Demo prompts
 

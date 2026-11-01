@@ -26,3 +26,20 @@ class ToolObservation(BaseModel):
     tool: str
     outcome: Literal["success", "not_found", "not_authorized", "error"]
     detail: str
+
+
+class EmployeeProfile(BaseModel):
+    """The signed-in employee's directory profile, read from the MCP service as a resource.
+
+    Extra fields are ignored, so the server's employee ID never reaches the model.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    full_name: str
+    department: str
+    office_location: str
+    manager_name: str | None = None
+
+    def summary(self) -> str:
+        return " · ".join((self.full_name, self.department, self.office_location))

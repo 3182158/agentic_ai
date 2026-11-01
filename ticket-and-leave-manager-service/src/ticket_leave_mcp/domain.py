@@ -1,4 +1,4 @@
-"""Typed result contracts returned by the helpdesk tools."""
+"""Typed result contracts returned by the helpdesk tools and resources."""
 
 from typing import Literal
 
@@ -84,6 +84,18 @@ class LeaveApplyResult(BaseModel):
     days: float | None = None
     status: str | None = None
     message: str
+
+
+class EmployeeProfile(BaseModel):
+    """What the model may know about the signed-in employee; no email, role or other IDs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: str
+    full_name: str
+    department: str
+    office_location: str
+    manager_name: str | None = None
 
 
 LeaveType = Literal["annual", "sick", "carry_forward"]
