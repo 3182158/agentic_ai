@@ -3,9 +3,6 @@ from pathlib import Path
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.agent import build_agent
-from build_database import build_database
-from config import Settings
-from data.repository import HelpdeskRepository
 from domain import HelpdeskContext
 from memory.long_term import LongTermMemory
 
@@ -32,18 +29,11 @@ def test_memory_is_scoped_per_employee_and_rejects_secrets(tmp_path: Path) -> No
     assert memory.forget("E104", memory_id)
 
 
-def test_saved_memory_reaches_prompt_in_a_new_thread(tmp_path: Path) -> None:
-    database = tmp_path / "helpdesk.sqlite3"
-    build_database(database)
+def test_saved_memory_reaches_prompt_in_a_new_thread(tmp_path: Path, mcp_service) -> None:
     memory = LongTermMemory(tmp_path / "m.sqlite3")
     memory.remember("E104", "Uses a MacBook")
     model = RecordingModel()
-    app = build_agent(
-        Settings(database, "E104", "test", 4),
-        HelpdeskRepository(database),
-        model=model,
-        long_term_memory=memory,
-    )
+    app = build_agent(mcp_service.settings, model=model, long_term_memory=memory)
 
     app.invoke(
         {"messages": [HumanMessage(content="VPN is failing")]},

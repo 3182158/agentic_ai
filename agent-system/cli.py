@@ -16,17 +16,18 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.markup import escape
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
 from config import get_settings
-from data.repository import HelpdeskRepository
 from domain import HelpdeskContext
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.long_term import LongTermMemory
 from memory.store import ConversationStore
+from tools.mcp_client import McpSetupError
 
 console = Console()
 
@@ -196,27 +197,25 @@ def _ask_decision(pending: dict) -> Command:
         return Command(resume={"decisions": [decision]})
 
 
-def run_chat(employee_id: str | None = None, database_path=None) -> None:
+def run_chat(employee_id: str | None = None) -> None:
     settings = get_settings()
     if employee_id:
         from dataclasses import replace
 
         settings = replace(settings, employee_id=employee_id.strip().upper())
-    if database_path:
-        from dataclasses import replace
-
-        settings = replace(settings, database_path=database_path)
     if not os.getenv("OPENAI_API_KEY"):
         console.print("[red]OPENAI_API_KEY is not set. Add it to .env before starting the chat.[/]")
         return
 
-    repository = HelpdeskRepository(settings.database_path)
-    app = build_agent(
-        settings,
-        repository,
-        checkpointer=create_checkpointer(settings.memory_database_path),
-        long_term_memory=LongTermMemory(settings.memory_database_path),
-    )
+    try:
+        app = build_agent(
+            settings,
+            checkpointer=create_checkpointer(settings.memory_database_path),
+            long_term_memory=LongTermMemory(settings.memory_database_path),
+        )
+    except McpSetupError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        return
     store = ConversationStore(settings.memory_database_path)
     thread_id = store.create_conversation(settings.employee_id)
     prompt_session: PromptSession[str] = PromptSession(
@@ -297,9 +296,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument(
         "--employee-id", help="demo identity supplied by the application (default E104)"
     )
-    parser.add_argument("--database", type=str, help="path to the SQLite helpdesk database")
     args = parser.parse_args(argv)
-    run_chat(args.employee_id, args.database)
+    run_chat(args.employee_id)
 
 
 if __name__ == "__main__":

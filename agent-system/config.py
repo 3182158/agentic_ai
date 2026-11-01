@@ -9,30 +9,32 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_DATABASE = ROOT_DIR / "mock-data" / "sqlite" / "acme_helpdesk.sqlite3"
 DEFAULT_MEMORY_DATABASE = ROOT_DIR / ".data" / "chat_memory.sqlite3"
+DEFAULT_MCP_URL = "http://127.0.0.1:9000/mcp"
 
 
 @dataclass(frozen=True)
 class Settings:
     """Configuration injected at the application boundary."""
 
-    database_path: Path
     employee_id: str
     model_name: str
     max_model_steps: int
     memory_database_path: Path = DEFAULT_MEMORY_DATABASE
+    mcp_url: str = DEFAULT_MCP_URL
+    mcp_secret: str = ""
 
 
 def get_settings() -> Settings:
     """Load local settings; identity comes from trusted app configuration."""
     load_dotenv(ROOT_DIR / ".env")
     return Settings(
-        database_path=Path(os.getenv("HELPDESK_DATABASE_PATH", str(DEFAULT_DATABASE))).expanduser(),
         employee_id=os.getenv("HELPDESK_DEMO_EMPLOYEE_ID", "E104").strip().upper(),
         model_name=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip(),
         max_model_steps=max(1, int(os.getenv("HELPDESK_MAX_MODEL_STEPS", "6"))),
         memory_database_path=Path(
             os.getenv("HELPDESK_MEMORY_DATABASE_PATH", str(DEFAULT_MEMORY_DATABASE))
         ).expanduser(),
+        mcp_url=(os.getenv("HELPDESK_MCP_URL") or DEFAULT_MCP_URL).strip(),
+        mcp_secret=os.getenv("HELPDESK_MCP_SECRET", "").strip(),
     )

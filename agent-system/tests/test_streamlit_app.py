@@ -1,16 +1,20 @@
 """UI regressions without provider calls or external tracing."""
 
+import logging
 import os
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
+from openai import AuthenticationError
 from streamlit.testing.v1 import AppTest
 
 from streamlit_app import _content_as_text, _tracing_enabled
 from memory.service import ChatService
 from memory.store import ConversationStore
+from tools.mcp_client import McpSetupError
 
 
 @pytest.mark.parametrize("value, enabled", [("true", True), (" TRUE ", True), ("false", False), ("", False)])
@@ -81,7 +85,67 @@ def test_chat_starters_settings_reset_and_no_trace_panels(monkeypatch, tmp_path)
     assert not app.exception
 
 
-def test_real_entrypoint_renders():
+def test_real_entrypoint_renders(monkeypatch, tmp_path, mcp_service):
+    # The real app discovers its tools from the MCP service, so point it at the test one.
+    settings = mcp_service.settings
+    monkeypatch.setenv("HELPDESK_MCP_URL", settings.mcp_url)
+    monkeypatch.setenv("HELPDESK_MCP_SECRET", settings.mcp_secret)
+    monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("LANGSMITH_TRACING", "false")
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "streamlit_app.py")).run()
     assert not app.exception
     assert app.chat_input
+
+
+def test_unreachable_mcp_server_shows_a_clear_error(monkeypatch, tmp_path):
+    monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
+
+    def unreachable(*args):
+        raise McpSetupError("Cannot load tools from the helpdesk MCP server at http://x/mcp.")
+
+    monkeypatch.setattr("streamlit_app._build_runtime", unreachable)
+    app = AppTest.from_string("from streamlit_app import main\nmain()\n").run()
+
+    assert not app.exception
+    assert "helpdesk MCP server" in app.error[0].value
+    assert not app.chat_input
+
+
+def _expired_key_error() -> AuthenticationError:
+    request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+    return AuthenticationError(
+        "Your API key has expired.", response=httpx.Response(401, request=request), body=None
+    )
+
+
+@pytest.mark.parametrize(
+    "failure, shown",
+    [
+        (_expired_key_error(), "Update OPENAI_API_KEY in your .env file"),
+        (RuntimeError("provider exploded"), "helpdesk MCP server is running"),
+    ],
+)
+def test_failed_turn_explains_the_cause_and_logs_the_details(monkeypatch, tmp_path, caplog, failure, shown):
+    monkeypatch.setenv("LANGSMITH_TRACING", "false")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    monkeypatch.setenv("HELPDESK_MEMORY_DATABASE_PATH", str(tmp_path / "memory.sqlite3"))
+
+    class FailingAgent:
+        def get_state(self, config):
+            return SimpleNamespace(interrupts=())
+
+        def invoke(self, state, config=None, context=None):
+            raise failure
+
+    service = ChatService(FailingAgent(), ConversationStore(tmp_path / "memory.sqlite3"))
+    monkeypatch.setattr("streamlit_app._build_runtime", lambda *args: service)
+
+    with caplog.at_level(logging.ERROR):
+        app = AppTest.from_string("from streamlit_app import main\nmain()\n").run()
+        app.chat_input[0].set_value("What's the status of INC-1042?").run()
+
+    assert not app.exception
+    assert shown in app.error[0].value
+    assert str(failure) not in app.error[0].value  # details stay out of the UI...
+    assert str(failure) in caplog.text  # ...but reach the server log

@@ -26,7 +26,7 @@ Three standalone demos showing how LLMs work. Output is colored with `rich`.
 | 1 | `session-1/demo1_count_tokens.py` | Text split into tokens, token IDs, per-word token counts, example cost | No |
 | 2 | `session-1/demo2_generate_text.py` | Next-token probabilities, streaming output, temperature effect | Yes |
 | 3 | `session-1/demo3_structured_output.py` | Extracting schema-validated JSON (Pydantic) from an email | Yes |
-| 4 | `agent-system/` | Session 1 LangChain `create_agent` helpdesk with read-only SQLite tools and in-memory conversation context | Yes |
+| 4 | `agent-system/` | Session 1 LangChain `create_agent` helpdesk with tools loaded from the [MCP service](ticket-and-leave-manager-service/README.md) (start it first) and in-memory conversation context | Yes |
 
 ```bash
 uv run session-1/demo1_count_tokens.py "Your own sentence here"

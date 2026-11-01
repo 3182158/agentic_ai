@@ -14,14 +14,14 @@ The secret is read from `HELPDESK_MCP_SECRET` in the repo-root `.env`. An export
 
 ## Connect the agent
 
-Put the secret in the repo-root `.env`, along with the server URL:
+Put the secret in the repo-root `.env`. Add the URL only if you change the server's host or port (it defaults to the address above):
 
 ```
-HELPDESK_MCP_URL=http://127.0.0.1:9000/mcp
 HELPDESK_MCP_SECRET=<at least 32 random characters>
+# HELPDESK_MCP_URL=http://127.0.0.1:9000/mcp
 ```
 
-When `HELPDESK_MCP_URL` is set, the agent calls this server. Otherwise it reads the SQLite database directly.
+This server is the agent's only source of helpdesk data. The agent loads its tools straight from here at startup (via `langchain-mcp-adapters`), so start the server first. Tool names, descriptions and schemas live only here: add or change a tool on the server, restart the server and the agent, and the agent can use it with no agent code change.
 
 ## Create a token for manual testing
 
@@ -34,7 +34,7 @@ Send it as `Authorization: Bearer <token>`. A 401 means the token was signed wit
 
 ## Security model
 
-- The agent signs a 60-second HS256 token whose `sub` is the signed-in employee. The server takes the identity only from that token; no tool accepts an employee ID.
+- The agent signs a 60-second HS256 token whose `sub` is the signed-in employee. The server takes the identity only from that token; no tool accepts an employee ID. Tool discovery at startup uses a token with `sub` `helpdesk-agent`, since listing tools is not an employee action.
 - Write tools require an `Idempotency-Key` header (`<tool>:<tool_call_id>`), so a retried approval cannot double-create.
 - Human approval stays in the agent; the server only receives approved writes.
 

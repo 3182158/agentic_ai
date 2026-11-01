@@ -1,4 +1,5 @@
-from cli import _content_as_text, _create_input_bindings, parse_command
+from cli import _content_as_text, _create_input_bindings, parse_command, run_chat
+from config import Settings
 from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 from prompt_toolkit.keys import Keys
 
@@ -29,3 +30,30 @@ def test_enter_and_shift_enter_are_distinct_input_keys() -> None:
     bindings = _create_input_bindings()
     assert bindings.get_bindings_for_keys((Keys.ControlM,))
     assert bindings.get_bindings_for_keys((Keys.ControlJ,))
+
+
+def _settings(tmp_path, **overrides) -> Settings:
+    return Settings(
+        "E104", "test-model", 4, tmp_path / "memory.sqlite3",
+        **{"mcp_url": "http://127.0.0.1:9/mcp", "mcp_secret": "x" * 32, **overrides},
+    )
+
+
+def test_run_chat_reports_an_unreachable_mcp_server(monkeypatch, tmp_path, capsys) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    monkeypatch.setattr("cli.get_settings", lambda: _settings(tmp_path))
+
+    run_chat()
+
+    output = capsys.readouterr().out
+    assert "Cannot load tools from the helpdesk MCP server" in output
+    assert "HELPDESK_MCP_SECRET" in output
+
+
+def test_run_chat_reports_a_missing_mcp_secret(monkeypatch, tmp_path, capsys) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-not-a-real-key")
+    monkeypatch.setattr("cli.get_settings", lambda: _settings(tmp_path, mcp_secret=""))
+
+    run_chat()
+
+    assert "HELPDESK_MCP_SECRET is not set" in capsys.readouterr().out

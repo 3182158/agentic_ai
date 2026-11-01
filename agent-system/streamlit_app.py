@@ -2,20 +2,25 @@
 
 from __future__ import annotations
 
+import logging
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, get_args
 
 import streamlit as st
+from openai import AuthenticationError
 
-from config import Settings, get_settings
-from data.repository import HelpdeskRepository
+from config import get_settings
 from domain import LeaveType, TicketCategory, TicketPriority
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.long_term import LongTermMemory
 from memory.service import ChatService, content_as_text as _content_as_text
 from memory.store import ConversationNotFound, ConversationStore
+from tools.mcp_client import McpSetupError
+
+logger = logging.getLogger(__name__)
 
 
 STYLES = """
@@ -54,14 +59,17 @@ STYLES = """
 
 @st.cache_resource(show_spinner=False)
 def _build_runtime(
-    database_path: str, employee_id: str, model_name: str, max_model_steps: int, memory_path: str
+    employee_id: str, model_name: str, max_model_steps: int, memory_path: str
 ) -> ChatService:
-    settings = Settings(
-        Path(database_path), employee_id, model_name, max_model_steps, Path(memory_path)
+    settings = replace(
+        get_settings(),
+        employee_id=employee_id,
+        model_name=model_name,
+        max_model_steps=max_model_steps,
+        memory_database_path=Path(memory_path),
     )
     agent = build_agent(
         settings,
-        HelpdeskRepository(settings.database_path),
         checkpointer=create_checkpointer(settings.memory_database_path),
         long_term_memory=LongTermMemory(settings.memory_database_path),
     )
@@ -154,6 +162,7 @@ def _render_approval(service: ChatService, user_id: str, pending: dict[str, Any]
         else:
             service.resume(thread_id, user_id, "approve" if edited == args else "edit", edited)
     except Exception:
+        logger.exception("Approval could not be completed")
         service.store.add_message(
             thread_id, user_id, "assistant",
             "We couldn't complete the approval. Check the fields and try again.",
@@ -176,7 +185,6 @@ def main() -> None:
         st.button("New conversation", on_click=_clear_conversation, use_container_width=True)
         with st.expander("Advanced settings"):
             model_name = st.text_input("Chat model", value=defaults.model_name).strip()
-            database_path = st.text_input("SQLite database", value=str(defaults.database_path)).strip()
             memory_path = st.text_input(
                 "Chat memory database", value=str(defaults.memory_database_path)
             ).strip()
@@ -190,7 +198,7 @@ def main() -> None:
                 st.caption("Conversation and tool data may be sent to LangSmith.")
                 st.link_button("Open LangSmith", "https://smith.langchain.com/", use_container_width=True)
 
-    signature = (employee_id, model_name, database_path, memory_path, max_model_steps)
+    signature = (employee_id, model_name, memory_path, max_model_steps)
     if st.session_state.get("settings_signature", signature) != signature:
         _clear_conversation()
     st.session_state["settings_signature"] = signature
@@ -198,7 +206,11 @@ def main() -> None:
 
     service: ChatService | None = None
     if employee_id and memory_path:
-        service = _build_runtime(database_path, employee_id, model_name, max_model_steps, memory_path)
+        try:
+            service = _build_runtime(employee_id, model_name, max_model_steps, memory_path)
+        except McpSetupError as exc:
+            st.error(str(exc))
+            st.stop()
         with st.sidebar:
             _render_sidebar_history(service, employee_id)
 
@@ -247,23 +259,22 @@ def main() -> None:
             try:
                 if not employee_id or not model_name:
                     raise ValueError("Set a demo employee ID and chat model in the sidebar.")
-                if not Path(database_path).is_file():
-                    raise ValueError("The helpdesk database was not found. Check the path in Advanced settings.")
                 if not os.getenv("OPENAI_API_KEY"):
                     raise ValueError("OPENAI_API_KEY is not configured. Add it to your environment and restart the app.")
                 if not st.session_state["thread_id"]:
                     st.session_state["thread_id"] = service.start_conversation(employee_id)
                 with st.spinner("Checking your helpdesk records…"):
                     service.send(st.session_state["thread_id"], employee_id, prompt)
-            except Exception:
-                # Provider exceptions can contain request details; keep them out of the UI.
-                answer = "We couldn't complete your request. Check your model, credentials, and database settings, then try again."
+            except Exception as exc:
+                # Provider exceptions can contain request details; log them, keep them out of the UI.
+                logger.exception("Chat turn failed")
+                answer = "We couldn't complete your request. Check your model and credentials, and that the helpdesk MCP server is running, then try again."
                 if not employee_id or not model_name:
                     answer = "Set a demo employee ID and chat model in the sidebar, then try again."
-                elif not Path(database_path).is_file():
-                    answer = "The helpdesk database was not found. Check the path in Advanced settings."
                 elif not os.getenv("OPENAI_API_KEY"):
                     answer = "OPENAI_API_KEY is not configured. Add it to your environment and restart the app."
+                elif isinstance(exc, AuthenticationError):
+                    answer = "OpenAI rejected the API key (it may have expired). Update OPENAI_API_KEY in your .env file and restart the app."
                 if service:
                     if not st.session_state["thread_id"]:
                         st.session_state["thread_id"] = service.start_conversation(employee_id)

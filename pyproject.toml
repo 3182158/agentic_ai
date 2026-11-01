@@ -17,6 +17,10 @@ dependencies = [
     "tiktoken>=0.14.0",
     "langchain>=1,<2",
     "langgraph-checkpoint-sqlite>=3,<4",
+    "mcp>=1.12,<2",
+    "pyjwt>=2.8,<3",
+    "uvicorn>=0.54.0",
+    "langchain-mcp-adapters>=0.3,<0.4",
 ]
 
 [dependency-groups]

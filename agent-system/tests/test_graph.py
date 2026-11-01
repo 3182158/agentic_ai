@@ -1,15 +1,12 @@
-from pathlib import Path
+from dataclasses import replace
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from config import Settings
-from data.repository import HelpdeskRepository
 from domain import HelpdeskContext
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
-from memory.service import ChatService
+from memory.service import ChatService, content_as_text
 from memory.store import ConversationStore
-from build_database import build_database
 
 
 class FakeToolCallingModel:
@@ -71,12 +68,9 @@ class RepeatingToolCallingModel:
         return AIMessage(content="Finished the lookups.")
 
 
-def test_graph_executes_tool_and_returns_model_answer(tmp_path: Path) -> None:
-    database = tmp_path / "helpdesk.sqlite3"
-    build_database(database)
+def test_graph_executes_tool_and_returns_model_answer(mcp_service) -> None:
     model = FakeToolCallingModel()
-    settings = Settings(database, "E104", "test-model", 4)
-    app = build_agent(settings, HelpdeskRepository(database), model=model)
+    app = build_agent(mcp_service.settings, model=model)
 
     result = app.invoke(
         {"messages": [HumanMessage(content="What is the status of INC-1042?")]},
@@ -88,12 +82,9 @@ def test_graph_executes_tool_and_returns_model_answer(tmp_path: Path) -> None:
     assert any(getattr(message, "name", None) == "get_ticket_status" for message in result["messages"])
 
 
-def test_graph_stops_after_model_step_limit(tmp_path: Path) -> None:
-    database = tmp_path / "helpdesk.sqlite3"
-    build_database(database)
+def test_graph_stops_after_model_step_limit(mcp_service) -> None:
     model = FakeToolCallingModel()
-    settings = Settings(database, "E104", "test-model", 1)
-    app = build_agent(settings, HelpdeskRepository(database), model=model)
+    app = build_agent(replace(mcp_service.settings, max_model_steps=1), model=model)
 
     result = app.invoke(
         {"messages": [HumanMessage(content="Look up a ticket")]},
@@ -104,13 +95,9 @@ def test_graph_stops_after_model_step_limit(tmp_path: Path) -> None:
     assert model.calls == 1
 
 
-def test_tool_run_limit_is_scoped_to_each_tool(tmp_path: Path) -> None:
-    database = tmp_path / "helpdesk.sqlite3"
-    build_database(database)
-    settings = Settings(database, "E104", "test-model", 6)
+def test_tool_run_limit_is_scoped_to_each_tool(mcp_service) -> None:
     app = build_agent(
-        settings,
-        HelpdeskRepository(database),
+        replace(mcp_service.settings, max_model_steps=6),
         model=RepeatingToolCallingModel(),
     )
 
@@ -126,24 +113,21 @@ def test_tool_run_limit_is_scoped_to_each_tool(tmp_path: Path) -> None:
         "get_ticket_status",
         "list_my_tickets",
     ]
-    assert "limit" in tool_results[2].content.casefold()
-    assert "limit" not in tool_results[3].content.casefold()
+    assert "limit" in content_as_text(tool_results[2].content).casefold()
+    assert "limit" not in content_as_text(tool_results[3].content).casefold()
 
 
-def test_checkpointer_keeps_agent_state_per_thread(tmp_path: Path) -> None:
-    database = tmp_path / "helpdesk.sqlite3"
-    build_database(database)
-    memory = tmp_path / "memory.sqlite3"
+def test_checkpointer_keeps_agent_state_per_thread(mcp_service) -> None:
+    memory = mcp_service.settings.memory_database_path
     app = build_agent(
-        Settings(database, "E104", "test-model", 4),
-        HelpdeskRepository(database),
+        mcp_service.settings,
         model=FakeToolCallingModel(),
         checkpointer=create_checkpointer(memory),
     )
-    service = ChatService(app, ConversationStore(memory))
-    thread_id = service.start_conversation("E104")
+    chat = ChatService(app, ConversationStore(memory))
+    thread_id = chat.start_conversation("E104")
 
-    turn = service.send(thread_id, "E104", "What is the status of INC-1042?")
+    turn = chat.send(thread_id, "E104", "What is the status of INC-1042?")
 
     assert "in progress" in turn["answer"]
     assert turn["tool_names"] == ["get_ticket_status"]
@@ -151,10 +135,10 @@ def test_checkpointer_keeps_agent_state_per_thread(tmp_path: Path) -> None:
     assert any(getattr(m, "name", None) == "get_ticket_status" for m in state)
     assert len([m for m in state if isinstance(m, HumanMessage)]) == 1
 
-    service.send(thread_id, "E104", "What about its priority?")
+    chat.send(thread_id, "E104", "What about its priority?")
     state = app.get_state({"configurable": {"thread_id": thread_id}}).values["messages"]
     assert len([m for m in state if isinstance(m, HumanMessage)]) == 2
 
     # Display transcript holds only clean user/assistant text, no tool messages.
-    transcript = service.store.get_messages(thread_id, "E104")
+    transcript = chat.store.get_messages(thread_id, "E104")
     assert [m["role"] for m in transcript] == ["user", "assistant"] * 2

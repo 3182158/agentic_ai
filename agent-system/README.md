@@ -5,34 +5,33 @@ A small, read-only helpdesk agent built with LangChain's `create_agent` and Lang
 ## Architecture
 
 ```text
-CLI ──trusted demo identity──▶ LangChain create_agent ⇄ read-only tools
-                                      │                     │
-                           short-term message list    SQLite repository
-                                                            │
-                                                   mock-data/sqlite fixtures
+CLI ──trusted demo identity──▶ LangChain create_agent ⇄ tools discovered from MCP
+                                      │                          │
+                           short-term message list     ticket-and-leave MCP service
+                                                                 │
+                                                        mock-data/sqlite fixtures
 ```
 
-- `config.py` loads model, database, demo-identity, and step-limit settings.
-- `domain.py` defines typed contracts independent of the model and database.
-- `data/repository.py` performs parameterized, read-only SQLite queries.
-- `tools/helpdesk.py` exposes typed tools; identity is closed over from application settings, not tool arguments.
+- `config.py` loads model, MCP connection, demo-identity, and step-limit settings.
+- `domain.py` defines typed contracts shared by the agent and its UI.
+- `tools/mcp_client.py` loads the helpdesk tools straight from the ticket-and-leave MCP server. Names, descriptions and schemas come from the server; nothing is redefined here, and identity is supplied per call from the runtime context, never by the model.
 - `agents/agent.py` builds `create_agent` with model-call and per-tool run limits.
 - `cli.py` displays tool requests and results and carries recent messages between turns in memory.
-- `tests/` tests the repository, identity binding, and graph with a fake model and no API key.
+- `tests/` tests tool loading, identity binding, approvals, and the graph against the real MCP service on a local port, using a fake model and no API key.
 
-The repository opens SQLite in read-only mode. Employees can look up their own tickets; the fictional `it_admin` role can inspect tickets across owners. Leave and ticket-list tools are always scoped to the configured employee.
+The agent has no database access of its own: the MCP service owns the data, opens SQLite query-only for reads, and scopes every tool to the signed-in employee. Employees can look up their own tickets; the fictional `it_admin` role can inspect tickets across owners.
 
 ## Setup and run
 
 From the repository root:
 
 1. Install the project and test dependencies with `uv sync`.
-2. Set `OPENAI_API_KEY` in the ignored `.env` file. Optional settings:
+2. In the ignored `.env` file, set `OPENAI_API_KEY` and `HELPDESK_MCP_SECRET` (it must match the MCP service's secret). Optional settings:
    - `OPENAI_MODEL` (default `gpt-4o-mini`)
    - `HELPDESK_DEMO_EMPLOYEE_ID` (default `E104`, Asha Raman)
-   - `HELPDESK_DATABASE_PATH` (default `mock-data/sqlite/acme_helpdesk.sqlite3`)
    - `HELPDESK_MAX_MODEL_STEPS` (default `6`)
-3. If the SQLite file is absent, rebuild it from the checked-in SQL fixtures:
+   - `HELPDESK_MCP_URL` (default `http://127.0.0.1:9000/mcp`)
+3. Start the [MCP service](../ticket-and-leave-manager-service/README.md); the agent discovers its tools from it at startup. If the service's SQLite file is absent, rebuild it from the checked-in SQL fixtures:
 
    ```bash
    uv run python mock-data/sqlite/build_database.py
@@ -52,7 +51,7 @@ Start the browser-based chat and agent walkthrough from the repository root:
 uv run streamlit run agent-system/streamlit_app.py
 ```
 
-The chat uses the same LangChain agent, SQLite repository, read-only tools, and short-term conversation context as the CLI. During a request, **Live agent execution** reflects the built-in model/tools events; expand **Turn trace** under an answer to inspect observable tool requests, arguments, repository results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, database path, and per-turn model-call limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
+The chat uses the same LangChain agent, MCP tools, and short-term conversation context as the CLI. During a request, **Live agent execution** reflects the built-in model/tools events; expand **Turn trace** under an answer to inspect observable tool requests, arguments, tool results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, chat-memory database path, and per-turn model-call limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
 
 For migration rationale, middleware budgets, streaming behavior, and the multi-agent evolution path, see [the migration guide](../docs/convert-basic-agent-to-create-agent.md).
 
@@ -66,7 +65,7 @@ Press `Enter` to submit a message; use `Shift+Enter` to add a line to a multi-li
 - `List my tickets.` — returns only tickets owned by the configured employee.
 - `What's the status of ticket INC-9999?` — not found; the agent must not invent a status.
 - `What's the weather today?` — politely declined as out of scope.
-- For authorization behavior, use another employee's ticket ID; the repository denies access unless the configured demo identity has the `it_admin` role.
+- For authorization behavior, use another employee's ticket ID; the MCP service denies access unless the configured demo identity has the `it_admin` role.
 
 Tool-call request arguments and tool observations are printed before the final response so the model-request/application-execution distinction is visible.
 
@@ -101,7 +100,7 @@ Tool-call request arguments and tool observations are printed before the final r
 uv run pytest agent-system/tests
 ```
 
-The tests build isolated fixture databases and use a deterministic fake model. They do not require an OpenAI key or network access.
+The tests start the MCP service on a local port with an isolated fixture database and use a deterministic fake model. They do not require an OpenAI key or external network access.
 
 ## Evolution boundaries
 
