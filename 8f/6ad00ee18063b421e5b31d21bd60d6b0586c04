@@ -1,0 +1,49 @@
+help-desk-rag/README.md
+  s_9f461fd1695ee0::t_c9bbdc6f813362 1-103
+pyproject.toml
+  s_9f461fd1695ee0::t_538a130dafe8ac 24-26
+  s_9f461fd1695ee0::t_df03859c836c6e 27
+help-desk-rag/sqlite_store.py
+  s_9f461fd1695ee0::t_a76ed23a72e0b3 1-22,24-54,56-122,152-186
+  s_9f461fd1695ee0::t_6cefb4bf6aa966 23
+  s_9f461fd1695ee0::t_bc97d7a1a3455c 55
+  s_9f461fd1695ee0::t_27d53d36c66c06 123-151
+help-desk-rag/config.py
+  s_9f461fd1695ee0::t_bbeba2a158156b 1-31
+README.md
+  s_9f461fd1695ee0::t_40aa070bacb400 45-47,49-50,55
+  s_9f461fd1695ee0::t_7b5c86f0d792a8 48,51-54
+help-desk-rag/tests/test_rag.py
+  s_9f461fd1695ee0::t_f27fc5f4806198 1-66
+help-desk-rag/rag.py
+  s_9f461fd1695ee0::t_0fa0d5d27cbb4f 1-51,54-68,70-76,78-79,82-86,88-89,91-94,96-105,112-113,128,130-134,138,141-165
+  s_9f461fd1695ee0::t_00f803bb8bf8c0 52-53,69,77,80-81,87,90,95,106-111,114-127,129,135-137,139-140
+help-desk-rag/cli.py
+  s_9f461fd1695ee0::t_b474a3ce44d411 1-168
+help-desk-rag/ingest.py
+  s_9f461fd1695ee0::t_00f803bb8bf8c0 43
+  s_9f461fd1695ee0::t_3af8edbbf4013f 69,71-76
+  s_9f461fd1695ee0::t_60e2a62abdc6fb 80-136,146-149,169
+  s_9f461fd1695ee0::t_79ad3fbd87aee6 1-42,44-68,70,77-79,137-145,150-168,170-194
+help-desk-rag/streamlit_app.py
+  s_9f461fd1695ee0::t_44bf70f964afef 1-44,55-58,60-75,77-140,142-147
+  s_9f461fd1695ee0::t_67a003f6e7a40b 45-54,59,76,141
+uv.lock
+  s_9f461fd1695ee0::t_fd88679d8a0fb4 24-27,53-56,72-235,292-304,539-547,620-662,672-769,779-845,1065-1076,1299-1371,1497-1508,1543-1689,1699-1732,1735-1746,1871-1922,1927-1931,1933-1935,2082-2192,2439-2447,2494-2502,2852-2937,2987-2988,3006-3014,3017,3019,3021,3078-3089,3108-3120,3361-3435,3592-3707
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f6ad00ee18063b421e5b31d21bd60d6b0586c04",
+  "prompts": {},
+  "sessions": {
+    "s_9f461fd1695ee0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "0c95386c-f966-446d-bb32-6038a0a2166c",
+        "model": "claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
