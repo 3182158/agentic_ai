@@ -1,0 +1,21 @@
+mock-data/documents/policies/it-security-handbook.pdf
+  s_7599f113ba4d52::t_f339eb60391339 1-283
+mock-data/documents/policies/travel-and-expenses.pdf
+  s_7599f113ba4d52::t_a37b794c186cf4 1-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f683fc8e7606f6df75afc8c13792253b84273ac6",
+  "prompts": {},
+  "sessions": {
+    "s_7599f113ba4d52": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "52a6d819-42d8-4ef1-b467-a9ed9675608b",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
