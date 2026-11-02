@@ -21,6 +21,10 @@ dependencies = [
     "pyjwt>=2.8,<3",
     "uvicorn>=0.54.0",
     "langchain-mcp-adapters>=0.3,<0.4",
+    "llama-index-core>=0.10.68.post1",
+    "llama-index-llms-openai>=0.1.27",
+    "llama-index-embeddings-openai>=0.1.11",
+    "llama-index-readers-file>=0.1.33",
 ]
 
 [dependency-groups]

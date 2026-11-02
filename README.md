@@ -42,3 +42,14 @@ The Streamlit app provides a browser-based chat and an interactive walkthrough o
 
 - All demos use `gpt-4o-mini`; change `MODEL` at the top of each file to switch.
 - Temperature for OpenAI models ranges from 0 to 2 (0 is near-deterministic, 1 is the default).
+
+## Help-desk RAG (LlamaIndex + SQLite)
+
+See `docs/rag-implementation-plan.md`. Both UIs show the internals: parsed metadata, chunks, vector previews, scored candidates (kept vs below cutoff) and the exact prompt sent to the LLM.
+
+```bash
+uv run python help-desk-rag/cli.py                  # chat CLI; /help lists /ingest, /docs, /chunks, /topk, /cutoff, /trace
+uv run streamlit run help-desk-rag/streamlit_app.py # tabs: Ask, Ingest (upload .md/.txt), Index
+uv run python help-desk-rag/ingest.py [--rebuild]   # batch-ingest the sample documents
+uv run pytest help-desk-rag/tests                   # offline tests
+```
