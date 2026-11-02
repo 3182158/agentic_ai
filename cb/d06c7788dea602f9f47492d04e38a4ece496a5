@@ -1,0 +1,31 @@
+mock-data/documents/policies/travel-and-expenses.md
+  s_7599f113ba4d52::t_8dfc489e6ac5d0 34-81
+mock-data/documents/policies/people-and-workplace-handbook.md
+  s_7599f113ba4d52::t_f7e833c5dce97a 2-4,7,10-16,20,24,28,32,36,40-83,86-125
+mock-data/README.md
+  s_7599f113ba4d52::t_8479631967d656 11-12,24-25
+mock-data/documents/policies/it-service-desk-guide.md
+  s_7599f113ba4d52::t_f7e833c5dce97a 2-3,7,10-16,20,29,33,37,41-91,94-183
+mock-data/documents/policies/archive-vpn-faq-v0-9.md
+  s_7599f113ba4d52::t_0ed7e59c896252 2-7,11,13,15,17,19,21,23-25
+mock-data/documents/known-issues/troubleshooting-knowledge-base.md
+  s_7599f113ba4d52::t_f7e833c5dce97a 2-3,5,7,10,12-252,256,263-295,298-348
+mock-data/documents/policies/it-security-handbook.md
+  s_7599f113ba4d52::t_f7e833c5dce97a 2-4,7,10-16,20,24,28,32,36,40-79,83,86-467
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbd06c7788dea602f9f47492d04e38a4ece496a5",
+  "prompts": {},
+  "sessions": {
+    "s_7599f113ba4d52": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "52a6d819-42d8-4ef1-b467-a9ed9675608b",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
