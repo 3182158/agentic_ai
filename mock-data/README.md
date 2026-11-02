@@ -8,8 +8,8 @@ Deterministic, fictional datasets for the Enterprise Helpdesk Agent workshop. No
 - `sqlite/schema.sql` — tables, constraints, indexes, and the leave-balance summary view.
 - `sqlite/seed.sql` — deterministic seed records.
 - `sqlite/build_database.py` — rebuilds the database using Python's standard library.
-- `documents/policies/` — four fictional policy/FAQ documents with stable source IDs and section headings for citations.
-- `documents/known-issues/` — six focused troubleshooting articles.
+- `documents/policies/` — five long merged handbooks/policies (IT security, IT service desk, people and workplace, travel and expenses) plus one archived superseded FAQ. Each part keeps its original `source_id` (listed in the `includes` front matter and on a `Source ID:` line) for citations.
+- `documents/known-issues/` — one merged troubleshooting knowledge base covering six issues.
 - `documents/security-training/` — an intentionally poisoned, non-authoritative document for an indirect prompt-injection exercise. Keep it isolated from production policy sources.
 
 ## Dataset scale
@@ -21,8 +21,8 @@ Deterministic, fictional datasets for the Enterprise Helpdesk Agent workshop. No
 | Leave balances | 10 | L1 onward |
 | Leave history entries | 30 | L2 onward |
 | Approval requests | 8 | L2 onward |
-| Policy/FAQ Markdown documents | 4 | L4 onward |
-| Known-issue Markdown articles | 6 | L4 onward |
+| Policy/handbook Markdown documents (4 long merged + travel + 1 archived FAQ) | 6 | L4 onward |
+| Troubleshooting knowledge base (6 merged articles) | 1 | L4 onward |
 | Poisoned training fixture | 1 | L5 security exercise only |
 
 ## Rebuild the SQLite file
