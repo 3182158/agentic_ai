@@ -25,6 +25,7 @@ dependencies = [
     "llama-index-llms-openai>=0.1.27",
     "llama-index-embeddings-openai>=0.1.11",
     "llama-index-readers-file>=0.1.33",
+    "llama-cloud>=2.8",
 ]
 
 [dependency-groups]

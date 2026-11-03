@@ -17,7 +17,7 @@ PART 2 - QUERY (per question)
 
 | Step | What happens | Setting |
 |---|---|---|
-| Load + parse | Reads `.md`/`.txt`; YAML front matter (`source_id`, `version`, …) becomes metadata | `ingest.py` |
+| Load + parse | Reads `.md`; `.pdf`/`.docx` are converted to Markdown by LlamaParse (needs `LLAMA_CLOUD_API_KEY`, cached in `.data/rag/parsed/`); YAML front matter (`source_id`, `version`, …) becomes metadata | `ingest.py` |
 | Chunk | Split by Markdown heading, then oversized sections split with overlap | `CHUNK_SIZE=512`, `CHUNK_OVERLAP=64` |
 | Embed | Each chunk (metadata + text) becomes a vector (OpenAI `text-embedding-3-small`) | `OPENAI_EMBED_MODEL` |
 | Store | Chunk text, metadata and vector saved in one SQLite file | `.data/rag/rag.sqlite3` |
@@ -72,7 +72,7 @@ uv run pytest help-desk-rag/tests
 ### Streamlit app
 
 - **Ask:** chat; each answer has an expander showing the question vector, all scored candidates (kept vs below cutoff) and the exact prompt sent to the LLM.
-- **Ingest:** upload `.md`/`.txt` files and see metadata, chunks and vector previews, or ingest the sample docs.
+- **Ingest:** upload `.md`/`.pdf`/`.docx` files and see metadata, chunks and vector previews, or ingest the sample docs.
 - **Index:** browse stored documents and chunks.
 - **Sidebar:** `top_k` and cutoff sliders, internals toggle, wipe index.
 

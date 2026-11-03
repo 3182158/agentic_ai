@@ -8,7 +8,7 @@ Deterministic, fictional datasets for the Enterprise Helpdesk Agent workshop. No
 - `sqlite/schema.sql` — tables, constraints, indexes, and the leave-balance summary view.
 - `sqlite/seed.sql` — deterministic seed records.
 - `sqlite/build_database.py` — rebuilds the database using Python's standard library.
-- `documents/policies/` — five long merged handbooks/policies (IT security, IT service desk, people and workplace, travel and expenses) plus one archived superseded FAQ. Each part keeps its original `source_id` (listed in the `includes` front matter and on a `Source ID:` line) for citations.
+- `documents/policies/` — mixed formats to exercise multi-format ingestion: `it-security-handbook.pdf` (11 pages, tables) and `travel-and-expenses.pdf`; `it-service-desk-guide.docx` and `people-and-workplace-handbook.docx` (real Word headings and tables); `archive-vpn-faq-v0-9.md` (superseded FAQ). Each merged part keeps its original `source_id` (listed in front matter or on a `Source ID:` line) for citations.
 - `documents/known-issues/` — one merged troubleshooting knowledge base covering six issues.
 - `documents/security-training/` — an intentionally poisoned, non-authoritative document for an indirect prompt-injection exercise. Keep it isolated from production policy sources.
 

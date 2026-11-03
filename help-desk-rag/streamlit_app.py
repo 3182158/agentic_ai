@@ -120,7 +120,7 @@ with tab_chat:
 
 with tab_ingest:
     st.subheader("Upload files")
-    files = st.file_uploader("Markdown or text files", type=["md", "txt"], accept_multiple_files=True)
+    files = st.file_uploader("Markdown, PDF or Word files", type=["md", "pdf", "docx"], accept_multiple_files=True)
     if files and st.button("Ingest uploaded files", type="primary"):
         with tempfile.TemporaryDirectory() as tmp:
             for f in files:

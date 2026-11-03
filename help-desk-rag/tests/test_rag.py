@@ -30,6 +30,15 @@ class HashEmbedding(BaseEmbedding):
     async def _aget_query_embedding(self, query): return self._embed(query)
 
 
+@pytest.fixture(autouse=True)
+def stub_llamaparse(monkeypatch):
+    """No network: PDF/DOCX 'parse' to a small Markdown stand-in."""
+    monkeypatch.setattr(
+        ingest_mod, "llamaparse_to_markdown",
+        lambda path, file_hash: f"# {path.stem}\n\nSource ID: `stub-{path.stem}`\n\nBody text.",
+    )
+
+
 @pytest.fixture
 def store(tmp_path):
     return SQLiteVectorStore(tmp_path / "rag.sqlite3")
@@ -64,3 +73,10 @@ def test_unrelated_question_is_not_covered(store):
     ingest_mod.ingest(store, embed)
     result = RagService(store, embed, cutoff=0.9).answer("quantum banana submarine")
     assert not result.grounded and result.answer == config.NOT_COVERED
+
+
+def test_pdf_and_docx_are_ingested_via_llamaparse(store):
+    ingest_mod.ingest(store, HashEmbedding())
+    ids = store.get_document_hashes()
+    assert "policies/it-security-handbook.pdf" in ids
+    assert "policies/it-service-desk-guide.docx" in ids

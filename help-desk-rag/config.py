@@ -13,6 +13,16 @@ DOCS_DIR = ROOT / "mock-data" / "documents"
 UNTRUSTED_DIRS = {"security-training"}
 DB_PATH = Path(os.getenv("RAG_DB_PATH", ROOT / ".data" / "rag" / "rag.sqlite3"))
 
+# PDF/Word files are converted to Markdown by LlamaParse (cloud API), cached on disk.
+LLAMA_CLOUD_API_KEY = os.getenv("LLAMA_CLOUD_API_KEY", "")
+# LlamaCloud host; use https://api.cloud.eu.llamaindex.ai for the EU region.
+LLAMA_CLOUD_BASE_URL = os.getenv("LLAMA_CLOUD_BASE_URL", "https://api.cloud.llamaindex.ai")
+# fast | cost_effective | agentic | agentic_plus
+LLAMAPARSE_TIER = os.getenv("LLAMAPARSE_TIER", "cost_effective")
+LLAMAPARSE_EXTS = {".pdf", ".docx"}
+SUPPORTED_EXTS = {".md"} | LLAMAPARSE_EXTS
+PARSE_CACHE_DIR = DB_PATH.parent / "parsed"
+
 EMBED_MODEL = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
 LLM_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 

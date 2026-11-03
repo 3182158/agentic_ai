@@ -28,8 +28,46 @@ NOISY_KEYS = ["file_path", "source_id", "version", "effective_date", "owner",
               "classification", "doc_type"]
 
 
+SOURCE_ID = re.compile(r"Source ID:\s*[`*]*([\w.-]+)")
+
+
+def llamaparse_to_markdown(path: Path, file_hash: str) -> str:
+    """Convert a PDF/DOCX to Markdown with LlamaParse; results are cached by file hash."""
+    cache = config.PARSE_CACHE_DIR / f"{file_hash}.md"
+    if cache.exists() and cache.stat().st_size:
+        return cache.read_text(encoding="utf-8")
+    if not config.LLAMA_CLOUD_API_KEY:
+        raise SystemExit(
+            f"LLAMA_CLOUD_API_KEY is not set; it is required to parse {path.name} with LlamaParse."
+        )
+    from llama_cloud import LlamaCloud
+
+    client = LlamaCloud(
+        api_key=config.LLAMA_CLOUD_API_KEY, base_url=config.LLAMA_CLOUD_BASE_URL
+    )
+    uploaded = client.files.create(file=str(path), purpose="parse")
+    result = client.parsing.parse(
+        file_id=uploaded.id,
+        tier=config.LLAMAPARSE_TIER,
+        version="latest",
+        output_options={"markdown": {"tables": {"output_tables_as_markdown": True}}},
+        expand=["markdown"],
+    )
+    markdown = "\n\n".join(page.markdown for page in result.markdown.pages)
+    if not markdown.strip():
+        raise RuntimeError(f"LlamaParse returned no text for {path.name}")
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(markdown, encoding="utf-8")
+    return markdown
+
+
 def parse_markdown(path: Path, base: Path) -> tuple[str, Document]:
-    raw = path.read_text(encoding="utf-8")
+    data = path.read_bytes()
+    file_hash = hashlib.sha256(data).hexdigest()
+    if path.suffix.lower() in config.LLAMAPARSE_EXTS:
+        raw = llamaparse_to_markdown(path, file_hash)
+    else:
+        raw = data.decode("utf-8")
     meta: dict = {}
     match = FRONT_MATTER.match(raw)
     if match:
@@ -40,7 +78,8 @@ def parse_markdown(path: Path, base: Path) -> tuple[str, Document]:
     meta["file_path"] = rel
     meta["doc_type"] = "known-issue" if "known-issues" in path.parts else "policy"
     meta.setdefault("title", path.stem)
-    meta.setdefault("source_id", path.stem)
+    found_id = SOURCE_ID.search(raw)
+    meta.setdefault("source_id", found_id.group(1) if found_id else path.stem)
     doc = Document(
         text=raw,
         doc_id=rel,
@@ -48,12 +87,12 @@ def parse_markdown(path: Path, base: Path) -> tuple[str, Document]:
         excluded_embed_metadata_keys=NOISY_KEYS,
         excluded_llm_metadata_keys=NOISY_KEYS,
     )
-    return hashlib.sha256(path.read_bytes()).hexdigest(), doc
+    return file_hash, doc
 
 
 def load_documents(base: Path, include_untrusted: bool = False):
     docs = []
-    for path in sorted(base.rglob("*.md")):
+    for path in sorted(p for p in base.rglob("*") if p.suffix.lower() in config.SUPPORTED_EXTS):
         if not include_untrusted and set(path.relative_to(base).parts) & config.UNTRUSTED_DIRS:
             continue
         docs.append(parse_markdown(path, base))
