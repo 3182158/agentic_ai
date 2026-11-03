@@ -1,0 +1,60 @@
+.env.example
+  s_83dda68a7c391d::t_9fa90c880b90a3 5-6
+  s_83dda68a7c391d::t_f831d9451b5fc3 7-8
+  s_83dda68a7c391d::t_7e0b099633cc5a 3-4
+docs/rag-pipeline.html
+  s_83dda68a7c391d::t_db749d3d3d00ef 1-190
+help-desk-rag/streamlit_app.py
+  s_83dda68a7c391d::t_7e0b099633cc5a 123
+pyproject.toml
+  s_83dda68a7c391d::t_f831d9451b5fc3 28
+help-desk-rag/ingest.py
+  s_83dda68a7c391d::t_3c3c2bbf5ab583 31,53
+  s_83dda68a7c391d::t_f831d9451b5fc3 43,45-46,48-52,54-58
+  s_83dda68a7c391d::t_7e0b099633cc5a 32-36,38-42,44,47,59-63,65-70,81-82,90,95
+  s_83dda68a7c391d::t_f1eea4ec5cf0af 37
+help-desk-rag/tests/test_rag.py
+  s_83dda68a7c391d::t_4bc7029e19de6d 33-41,76-82
+docs/rag-implementation-plan.md
+  s_9f461fd1695ee0::t_a16e33a375be32 1-105
+mock-data/README.md
+  s_7599f113ba4d52::t_16f3dd86d0147f 11
+help-desk-rag/README.md
+  s_83dda68a7c391d::t_4bc7029e19de6d 20,75
+help-desk-rag/config.py
+  s_83dda68a7c391d::t_f831d9451b5fc3 20-21
+  s_83dda68a7c391d::t_7e0b099633cc5a 16-17,22-25
+  s_83dda68a7c391d::t_9fa90c880b90a3 18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b0e7bfaba1e42e73038e4a93489d629b74257fa",
+  "prompts": {},
+  "sessions": {
+    "s_7599f113ba4d52": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "52a6d819-42d8-4ef1-b467-a9ed9675608b",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    },
+    "s_83dda68a7c391d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7fd16c77-2d4e-405a-b461-283cc047b14f",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    },
+    "s_9f461fd1695ee0": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "0c95386c-f966-446d-bb32-6038a0a2166c",
+        "model": "claude-sonnet-5.5"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
