@@ -16,7 +16,7 @@ from domain import LeaveType, TicketCategory, TicketPriority
 from agents.agent import build_agent
 from memory.checkpointer import create_checkpointer
 from memory.long_term import LongTermMemory
-from memory.service import ChatService, content_as_text as _content_as_text
+from memory.service import ApprovalDecision, ChatService, content_as_text as _content_as_text
 from memory.store import ConversationNotFound, ConversationStore
 from tools.mcp_client import (
     EmployeeProfiles,
@@ -133,46 +133,92 @@ def _render_sidebar_history(service: ChatService, user_id: str) -> None:
             st.caption("Tools: " + ", ".join(f"{n} ×{c}" for n, c in stats["tool_usage"].items()))
 
 
-def _select(label: str, options: list[str], current: object, default: int = 0) -> str:
+def _select(
+    label: str, options: list[str], current: object, default: int = 0, *, key: str
+) -> str:
     return st.selectbox(
-        label, options, index=options.index(current) if current in options else default
+        label, options,
+        index=options.index(current) if isinstance(current, str) and current in options else default,
+        key=key,
     )
 
 
-def _render_approval(service: ChatService, user_id: str, pending: dict[str, Any]) -> None:
-    """Show the drafted write action; nothing is written until the user approves."""
-    args = pending["args"]
-    action = pending["name"]
+def _render_approval(service: ChatService, user_id: str, pending: list[dict[str, Any]]) -> None:
+    """Review every draft independently and submit the complete decision batch."""
     thread_id = st.session_state["thread_id"]
+    decisions: list[ApprovalDecision] = []
     with st.chat_message("assistant", avatar="🤖"):
-        if action == "apply_leave":
-            st.markdown("**Approval required: submit this leave request?**")
-        else:
-            st.markdown("**Approval required: create this ticket?**")
-        with st.form("write_approval"):
-            if action == "apply_leave":
-                edited = {
-                    "leave_type": _select("Leave type", list(get_args(LeaveType)), args.get("leave_type")),
-                    "start_date": st.text_input("Start date (YYYY-MM-DD)", value=args.get("start_date", "")).strip(),
-                    "end_date": st.text_input("End date (YYYY-MM-DD)", value=args.get("end_date", "")).strip(),
-                    "reason": st.text_area("Reason", value=args.get("reason", "")).strip(),
-                }
-            else:
-                edited = {
-                    "title": st.text_input("Title", value=args.get("title", "")).strip(),
-                    "description": st.text_area("Description", value=args.get("description", "")).strip(),
-                    "category": _select("Category", list(get_args(TicketCategory)), args.get("category")),
-                    "priority": _select("Priority", list(get_args(TicketPriority)), args.get("priority"), 1),
-                }
-            approve = st.form_submit_button("Approve and submit", type="primary")
-            reject = st.form_submit_button("Reject")
-    if not (approve or reject):
+        st.markdown("**Review pending actions**")
+        st.caption("Choose Approve or Reject for each action. Edited fields are used only when approved.")
+        batch_key = ":".join(
+            f"{item['interrupt_id']}:{item['action_index']}" for item in pending
+        )
+        with st.form(f"write_approval:{thread_id}:{batch_key}"):
+            for item in pending:
+                args: dict[str, str] = item["args"]
+                action = item["name"]
+                key = f"{thread_id}:{item['interrupt_id']}:{item['action_index']}"
+                with st.container(border=True):
+                    if action == "apply_leave":
+                        st.markdown("**Approval required: submit this leave request?**")
+                        edited = {
+                            "leave_type": _select(
+                                "Leave type", list(get_args(LeaveType)), args.get("leave_type"),
+                                key=f"{key}:leave_type",
+                            ),
+                            "start_date": st.text_input(
+                                "Start date (YYYY-MM-DD)", value=args.get("start_date", ""),
+                                key=f"{key}:start_date",
+                            ).strip(),
+                            "end_date": st.text_input(
+                                "End date (YYYY-MM-DD)", value=args.get("end_date", ""),
+                                key=f"{key}:end_date",
+                            ).strip(),
+                            "reason": st.text_area(
+                                "Reason", value=args.get("reason", ""), key=f"{key}:reason",
+                            ).strip(),
+                        }
+                    else:
+                        st.markdown("**Approval required: create this ticket?**")
+                        edited = {
+                            "title": st.text_input(
+                                "Title", value=args.get("title", ""), key=f"{key}:title",
+                            ).strip(),
+                            "description": st.text_area(
+                                "Description", value=args.get("description", ""),
+                                key=f"{key}:description",
+                            ).strip(),
+                            "category": _select(
+                                "Category", list(get_args(TicketCategory)), args.get("category"),
+                                key=f"{key}:category",
+                            ),
+                            "priority": _select(
+                                "Priority", list(get_args(TicketPriority)), args.get("priority"), 1,
+                                key=f"{key}:priority",
+                            ),
+                        }
+                    decision = st.selectbox(
+                        "Decision", ["Approve", "Reject"], index=None,
+                        placeholder="Choose a decision", key=f"{key}:decision",
+                    )
+                    if decision is not None:
+                        decisions.append({
+                            "interrupt_id": item["interrupt_id"],
+                            "action_index": item["action_index"],
+                            "decision": (
+                                "reject" if decision == "Reject" else
+                                ("approve" if edited == args else "edit")
+                            ),
+                            "edited_args": edited,
+                        })
+            submitted = st.form_submit_button("Submit decisions", type="primary")
+    if not submitted:
+        return
+    if len(decisions) != len(pending):
+        st.warning("Choose Approve or Reject for every pending action before submitting.")
         return
     try:
-        if reject:
-            service.resume(thread_id, user_id, "reject")
-        else:
-            service.resume(thread_id, user_id, "approve" if edited == args else "edit", edited)
+        service.resume_approvals(thread_id, user_id, decisions)
     except Exception:
         logger.exception("Approval could not be completed")
         service.store.add_message(
@@ -272,11 +318,11 @@ def main() -> None:
             _render_sidebar_history(service, employee_id)
 
     transcript: list[dict[str, Any]] = []
-    pending: dict[str, Any] | None = None
+    pending: list[dict[str, Any]] = []
     if service and st.session_state["thread_id"]:
         try:
             transcript = service.store.get_messages(st.session_state["thread_id"], employee_id)
-            pending = service.pending_approval(st.session_state["thread_id"], employee_id)
+            pending = service.pending_approvals(st.session_state["thread_id"], employee_id)
         except ConversationNotFound:
             _clear_conversation()
 
@@ -300,9 +346,9 @@ def main() -> None:
                 continue
             st.markdown(message["content"])
 
-    if pending:
+    if pending and service is not None:
         if template:
-            st.warning("Approve or reject the pending request before using a template.")
+            st.warning("Approve or reject the pending actions before using a template.")
         _render_approval(service, employee_id, pending)
         return
 

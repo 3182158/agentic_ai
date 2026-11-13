@@ -249,7 +249,7 @@ def test_prompt_template_waits_while_an_approval_is_pending(monkeypatch, tmp_pat
         "priority": "medium",
     }
     agent.interrupts = (
-        SimpleNamespace(value={"action_requests": [{"name": "create_ticket", "args": draft}]}),
+        SimpleNamespace(id="ticket-approval", value={"action_requests": [{"name": "create_ticket", "args": draft}]}),
     )
     app.run()
 
@@ -257,6 +257,78 @@ def test_prompt_template_waits_while_an_approval_is_pending(monkeypatch, tmp_pat
 
     assert any("Approve or reject" in w.value for w in app.warning)
     assert agent.sent == ["Raise a ticket for wifi dropping."]
+
+
+@pytest.mark.parametrize("separate_interrupts", [False, True])
+def test_all_approval_cards_have_independent_fields_and_decisions(
+    monkeypatch, tmp_path, separate_interrupts
+):
+    monkeypatch.setattr("streamlit_app.list_helpdesk_prompts", lambda *args: [])
+    monkeypatch.setattr("streamlit_app._profiles", _no_profiles)
+    app, agent, service = _prompt_app(monkeypatch, tmp_path, "http://127.0.0.1:9/mcp", "x" * 32)
+    app.chat_input[0].set_value("Raise two tickets and request leave.").run()
+    ticket = {
+        "name": "create_ticket",
+        "args": {
+            "title": "Laptop broken", "description": "Cannot boot",
+            "category": "Hardware", "priority": "medium",
+        },
+    }
+    other_ticket = {**ticket, "args": {**ticket["args"], "title": "Monitor broken"}}
+    leave = {
+        "name": "apply_leave",
+        "args": {
+            "leave_type": "annual", "start_date": "2027-01-11",
+            "end_date": "2027-01-13", "reason": "Time off",
+        },
+    }
+    groups = [[ticket, other_ticket], [leave]] if separate_interrupts else [[ticket, other_ticket, leave]]
+    agent.interrupts = tuple(
+        SimpleNamespace(id=f"interrupt-{i}", value={"action_requests": actions})
+        for i, actions in enumerate(groups)
+    )
+    resumed = []
+
+    def resume(command, config=None, context=None):
+        resumed.append(command.resume)
+        agent.interrupts = ()
+        return {"messages": [HumanMessage(content="Requests"), AIMessage(content="Decisions applied.")]}
+
+    monkeypatch.setattr(agent, "invoke", resume)
+    app.run()
+
+    assert not app.exception
+    assert len([s for s in app.main.selectbox if s.label == "Decision"]) == 3
+    assert not app.chat_input
+    assert [t.value for t in app.main.text_input if t.label == "Title"] == [
+        "Laptop broken", "Monitor broken",
+    ]
+    decision_widgets = [s for s in app.main.selectbox if s.label == "Decision"]
+    assert all(widget.value is None for widget in decision_widgets)
+    decision_widgets[0].select("Approve")
+    next(b for b in app.button if b.label == "Submit decisions").click().run()
+
+    assert resumed == []
+    assert any("every pending action" in w.value for w in app.warning)
+    assert len(service.pending_approvals(app.session_state["thread_id"], "E104")) == 3
+
+    next(t for t in app.main.text_input if t.label == "Title").set_value("Edited laptop")
+    decisions = [s for s in app.main.selectbox if s.label == "Decision"]
+    decisions[0].select("Approve")
+    decisions[1].select("Reject")
+    decisions[2].select("Approve")
+    next(b for b in app.button if b.label == "Submit decisions").click().run()
+
+    assert not app.exception
+    assert len(resumed) == 1
+    first = resumed[0]["interrupt-0"]["decisions"]
+    assert first[0]["type"] == "edit"
+    assert first[0]["edited_action"]["args"]["title"] == "Edited laptop"
+    assert first[1]["type"] == "reject"
+    leave_decision = resumed[0]["interrupt-1"]["decisions"][0] if separate_interrupts else first[2]
+    assert leave_decision == {"type": "approve"}
+    assert service.pending_approvals(app.session_state["thread_id"], "E104") == []
+    assert app.chat_input
 
 
 def test_prompt_templates_are_unavailable_without_the_server(monkeypatch, tmp_path):

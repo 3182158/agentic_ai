@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
@@ -12,7 +12,15 @@ from domain import HelpdeskContext
 from memory.store import ConversationStore
 
 FALLBACK_ANSWER = "I couldn't complete that request. Please try again."
-AWAITING_APPROVAL = "I've drafted this action and need your approval before it runs."
+AWAITING_APPROVAL = "Please review the pending actions below. Nothing will be submitted without your approval."
+
+
+class ApprovalDecision(TypedDict):
+    interrupt_id: str
+    action_index: int
+    decision: str
+    edited_args: NotRequired[dict[str, Any]]
+    reason: NotRequired[str]
 
 
 def content_as_text(content: Any) -> str:
@@ -54,14 +62,24 @@ class ChatService:
         return self._finish(thread_id, user_id, result)
 
     def pending_approval(self, thread_id: str, user_id: str) -> dict[str, Any] | None:
-        """Return the paused write action awaiting a decision, read from checkpointed state."""
+        """Return the first draft for single-action callers; the UI uses pending_approvals."""
+        pending = self.pending_approvals(thread_id, user_id)
+        if not pending:
+            return None
+        return {
+            key: value for key, value in pending[0].items()
+            if key not in {"interrupt_id", "action_index"}
+        }
+
+    def pending_approvals(self, thread_id: str, user_id: str) -> list[dict[str, Any]]:
+        """Read every paused action, preserving its interrupt id and position."""
         self.store.get_conversation(thread_id, user_id)
         state = self.agent.get_state({"configurable": {"thread_id": thread_id}})
-        for interrupt in state.interrupts:
-            requests = interrupt.value.get("action_requests", [])
-            if requests:
-                return dict(requests[0])
-        return None
+        return [
+            {**request, "interrupt_id": interrupt.id, "action_index": index}
+            for interrupt in state.interrupts
+            for index, request in enumerate(interrupt.value.get("action_requests", []))
+        ]
 
     def resume(
         self,
@@ -71,23 +89,60 @@ class ChatService:
         edited_args: dict[str, Any] | None = None,
         reason: str = "",
     ) -> dict[str, Any]:
-        """Apply approve/edit/reject to the paused action; the write runs only on approve/edit."""
-        pending = self.pending_approval(thread_id, user_id)
-        if pending is None:
+        """Compatibility entry point for a single pending action only."""
+        pending = self.pending_approvals(thread_id, user_id)
+        if not pending:
             raise ValueError("There is no pending approval for this conversation.")
-        if decision == "approve":
-            payload: dict[str, Any] = {"type": "approve"}
-        elif decision == "edit":
-            payload = {
-                "type": "edit",
-                "edited_action": {"name": pending["name"], "args": edited_args or {}},
-            }
-        elif decision == "reject":
-            payload = {"type": "reject", "message": reason or "The user rejected this action."}
-        else:
-            raise ValueError(f"Unknown decision: {decision}")
+        if len(pending) != 1:
+            raise ValueError("Provide a separate decision for every pending action.")
+        return self.resume_approvals(thread_id, user_id, [{
+            "interrupt_id": pending[0]["interrupt_id"],
+            "action_index": pending[0]["action_index"],
+            "decision": decision,
+            "edited_args": edited_args if edited_args is not None else {},
+            "reason": reason,
+        }])
+
+    def resume_approvals(
+        self, thread_id: str, user_id: str, decisions: list[ApprovalDecision]
+    ) -> dict[str, Any]:
+        """Validate all decisions, then resume each interrupt in its original action order."""
+        pending = self.pending_approvals(thread_id, user_id)
+        if not pending:
+            raise ValueError("There is no pending approval for this conversation.")
+        by_action = {
+            (decision["interrupt_id"], decision["action_index"]): decision
+            for decision in decisions
+        }
+        expected = {(action["interrupt_id"], action["action_index"]) for action in pending}
+        if len(by_action) != len(decisions) or set(by_action) != expected:
+            raise ValueError(
+                "Provide exactly one decision for every pending action; approvals may have changed."
+            )
+        resume_map: dict[str, Any] = {}
+        for action in pending:
+            response = by_action[(action["interrupt_id"], action["action_index"])]
+            decision = response["decision"]
+            if decision == "approve":
+                payload: dict[str, Any] = {"type": "approve"}
+            elif decision == "edit":
+                if "edited_args" not in response:
+                    raise ValueError("Edited arguments are required for an edit decision.")
+                payload = {
+                    "type": "edit",
+                    "edited_action": {"name": action["name"], "args": response["edited_args"]},
+                }
+            elif decision == "reject":
+                payload = {
+                    "type": "reject",
+                    "message": response.get("reason") or "The user rejected this action.",
+                }
+            else:
+                raise ValueError(f"Unknown decision: {decision}")
+            interrupt_response = resume_map.setdefault(action["interrupt_id"], {"decisions": []})
+            interrupt_response["decisions"].append(payload)
         result = self.agent.invoke(
-            Command(resume={"decisions": [payload]}),
+            Command(resume=resume_map),
             config={"configurable": {"thread_id": thread_id}},
             context=HelpdeskContext(employee_id=user_id),
         )

@@ -16,6 +16,9 @@ from langchain_openai import ChatOpenAI
 
 from config import Settings
 from domain import EmployeeProfile, HelpdeskContext
+from agents.hr_agent import HR_TOOL_NAMES, build_hr_agent
+from agents.it_agent import IT_TOOL_NAMES, build_it_agent
+from agents.supervisor_agent import SUPERVISOR_PROMPT, build_supervisor_agent
 from memory.long_term import LongTermMemory
 from tools.mcp_client import EmployeeProfiles, load_helpdesk_tools
 from tools.memory_tools import create_memory_tools
@@ -56,6 +59,65 @@ def _profile_lines(profile: EmployeeProfile) -> str:
     return "\n".join(f"- {label}: {' '.join(value.split())[:80]}" for label, value in fields if value)
 
 
+def _context_prompt(settings: Settings, system_prompt: str, long_term_memory):
+    profiles = EmployeeProfiles(settings.mcp_url, settings.mcp_secret)
+
+    @dynamic_prompt
+    def context_prompt(request: ModelRequest) -> str:
+        """The base prompt plus what is known about this employee; each part is optional."""
+        employee_id = request.runtime.context.employee_id
+        prompt = system_prompt
+        profile = profiles.get(employee_id)
+        if profile is not None:
+            prompt += f"\n{PROFILE_PROMPT}\n{_profile_lines(profile)}"
+        if long_term_memory is not None:
+            saved = long_term_memory.list(employee_id)
+            lines = "\n".join(f"- [id {i}] {fact}" for i, fact in saved) or "- (none)"
+            prompt += f"\n{MEMORY_PROMPT}\nSaved memories:\n{lines}"
+        return prompt
+
+    return context_prompt
+
+
+def _select_tools(tools, names):
+    """Pick the named tools; fail loudly if the MCP server no longer offers one."""
+    by_name = {t.name: t for t in tools}
+    missing = [n for n in names if n not in by_name]
+    if missing:
+        raise ValueError(f"MCP server is missing expected tools: {missing}")
+    return [by_name[n] for n in names]
+
+
+def _build_multi_agent(settings, tools, chat_model, injected_model, checkpointer, long_term_memory):
+    """Triage supervisor in front of IT and HR specialists; approvals live in the specialists."""
+    triage_model = injected_model or ChatOpenAI(model=settings.triage_model_name, temperature=0)
+    extra = create_memory_tools(long_term_memory) if long_term_memory is not None else []
+    system_prompt = f"{SUPERVISOR_PROMPT}\nToday's date: {date.today().isoformat()}."
+    middleware = [
+        ModelCallLimitMiddleware(run_limit=settings.max_model_steps, exit_behavior="end"),
+        ToolCallLimitMiddleware(tool_name="ask_it_specialist", run_limit=2, exit_behavior="continue"),
+        ToolCallLimitMiddleware(tool_name="ask_hr_specialist", run_limit=2, exit_behavior="continue"),
+        _context_prompt(settings, system_prompt, long_term_memory),
+    ]
+    today = date.today().isoformat()
+    # Least privilege: each specialist receives only the tools it is allowed to use.
+    it_agent = build_it_agent(
+        chat_model, _select_tools(tools, IT_TOOL_NAMES), today, max_model_steps=settings.max_model_steps
+    )
+    hr_agent = build_hr_agent(
+        chat_model, _select_tools(tools, HR_TOOL_NAMES), today, max_model_steps=settings.max_model_steps
+    )
+    return build_supervisor_agent(
+        triage_model,
+        it_agent=it_agent,
+        hr_agent=hr_agent,
+        extra_tools=extra,
+        middleware=middleware,
+        checkpointer=checkpointer,
+        system_prompt=system_prompt,
+    )
+
+
 def build_agent(
     settings: Settings,
     *,
@@ -70,6 +132,8 @@ def build_agent(
     """
     tools = load_helpdesk_tools(settings.mcp_url, settings.mcp_secret)
     chat_model = model or ChatOpenAI(model=settings.model_name, temperature=0)
+    if settings.multi_agent:
+        return _build_multi_agent(settings, tools, chat_model, model, checkpointer, long_term_memory)
     middleware = [
         ModelCallLimitMiddleware(run_limit=settings.max_model_steps, exit_behavior="end"),
         ToolCallLimitMiddleware(
@@ -105,25 +169,9 @@ def build_agent(
         ),
     ]
     system_prompt = f"{SYSTEM_PROMPT}\nToday's date: {date.today().isoformat()}."
-    profiles = EmployeeProfiles(settings.mcp_url, settings.mcp_secret)
     if long_term_memory is not None:
         tools = [*tools, *create_memory_tools(long_term_memory)]
-
-    @dynamic_prompt
-    def context_prompt(request: ModelRequest) -> str:
-        """The base prompt plus what is known about this employee; each part is optional."""
-        employee_id = request.runtime.context.employee_id
-        prompt = system_prompt
-        profile = profiles.get(employee_id)
-        if profile is not None:
-            prompt += f"\n{PROFILE_PROMPT}\n{_profile_lines(profile)}"
-        if long_term_memory is not None:
-            saved = long_term_memory.list(employee_id)
-            lines = "\n".join(f"- [id {i}] {fact}" for i, fact in saved) or "- (none)"
-            prompt += f"\n{MEMORY_PROMPT}\nSaved memories:\n{lines}"
-        return prompt
-
-    middleware.append(context_prompt)
+    middleware.append(_context_prompt(settings, system_prompt, long_term_memory))
     return create_agent(
         model=chat_model,
         tools=tools,

@@ -23,6 +23,8 @@ class Settings:
     memory_database_path: Path = DEFAULT_MEMORY_DATABASE
     mcp_url: str = DEFAULT_MCP_URL
     mcp_secret: str = ""
+    multi_agent: bool = False
+    triage_model_name: str = "gpt-4o-mini"
 
 
 def get_settings() -> Settings:
@@ -37,4 +39,6 @@ def get_settings() -> Settings:
         ).expanduser(),
         mcp_url=(os.getenv("HELPDESK_MCP_URL") or DEFAULT_MCP_URL).strip(),
         mcp_secret=os.getenv("HELPDESK_MCP_SECRET", "").strip(),
+        multi_agent=os.getenv("HELPDESK_MULTI_AGENT", "true").strip().lower() not in {"0", "false", "no"},
+        triage_model_name=os.getenv("OPENAI_TRIAGE_MODEL", "gpt-4o-mini").strip(),
     )

@@ -30,6 +30,8 @@ From the repository root:
    - `OPENAI_MODEL` (default `gpt-4o-mini`)
    - `HELPDESK_DEMO_EMPLOYEE_ID` (default `E104`, Asha Raman)
    - `HELPDESK_MAX_MODEL_STEPS` (default `6`)
+   - `HELPDESK_MULTI_AGENT` (default `true`): a triage supervisor delegates to IT (tickets) and HR (leave) specialists; set `false` for the single agent
+   - `OPENAI_TRIAGE_MODEL` (default `gpt-4o-mini`): the supervisor's model; specialists use `OPENAI_MODEL`
    - `HELPDESK_MCP_URL` (default `http://127.0.0.1:9000/mcp`)
 3. Start the [MCP service](../ticket-and-leave-manager-service/README.md); the agent discovers its tools from it at startup. If the service's SQLite file is absent, rebuild it from the checked-in SQL fixtures:
 
@@ -50,6 +52,8 @@ Start the browser-based chat and agent walkthrough from the repository root:
 ```bash
 uv run streamlit run agent-system/streamlit_app.py
 ```
+
+When tools need approval, the chat shows a separate review card for every pending ticket or leave request, including parallel specialist requests. Edit each draft as needed, choose **Approve** or **Reject** independently on every card, then click **Submit decisions**. Nothing runs until every action has a decision. Decisions are matched to their checkpointed interrupt IDs and action positions; approving one action never automatically rejects another. New approvals raised after submission appear in the same conversation.
 
 The chat uses the same LangChain agent, MCP tools, and short-term conversation context as the CLI. During a request, **Live agent execution** reflects the built-in model/tools events; expand **Turn trace** under an answer to inspect observable tool requests, arguments, tool results, and the final response. The **How the agent works** tab explains each stage and its trust boundaries. The sidebar lets you change the demo employee, model, chat-memory database path, and per-turn model-call limit; changing the demo identity starts a fresh conversation. This employee selector is only a workshop demo setting—not authentication.
 
