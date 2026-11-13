@@ -1,0 +1,46 @@
+services:
+  ticket-leave-mcp:
+    build: ./ticket-and-leave-manager-service
+    ports:
+      - "9000:9000"
+    environment:
+      HELPDESK_MCP_SECRET: ${HELPDESK_MCP_SECRET:?Set HELPDESK_MCP_SECRET in .env}
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "9000"
+      HELPDESK_DATABASE_PATH: /data/acme_helpdesk.sqlite3
+    volumes:
+      - ./mock-data/sqlite:/data
+    restart: unless-stopped
+
+  agent-api:
+    build:
+      context: .
+      dockerfile: agent-system/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in .env}
+      HELPDESK_MCP_SECRET: ${HELPDESK_MCP_SECRET:?Set HELPDESK_MCP_SECRET in .env}
+      HELPDESK_MCP_URL: http://ticket-leave-mcp:9000/mcp
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_TRIAGE_MODEL: ${OPENAI_TRIAGE_MODEL:-gpt-4o-mini}
+      HELPDESK_DEMO_EMPLOYEE_ID: ${HELPDESK_DEMO_EMPLOYEE_ID:-E104}
+      HELPDESK_MULTI_AGENT: ${HELPDESK_MULTI_AGENT:-true}
+    volumes:
+      - agent-data:/data
+    depends_on:
+      - ticket-leave-mcp
+    restart: unless-stopped
+
+  demo-ui:
+    build: ./demo-ui
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://agent-api:8000
+    depends_on:
+      - agent-api
+    restart: unless-stopped
+
+volumes:
+  agent-data:
