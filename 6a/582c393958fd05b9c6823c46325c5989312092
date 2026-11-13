@@ -1,0 +1,49 @@
+demo-ui/requirements.txt
+  s_00dfd3713e118b::t_56858a7d5b22a9 1-2
+ticket-and-leave-manager-service/.dockerignore
+  s_00dfd3713e118b::t_0e773d809826c0 1-7
+agent-system/api.py
+  s_00dfd3713e118b::t_47efbd4c836ff9 9,55-57
+  s_00dfd3713e118b::t_6280d6aadf125f 1-8,10-54,58-140
+pyproject.toml
+  s_00dfd3713e118b::t_6b1d9514bb19b1 29
+agent-system/agents/it_agent.py
+  s_00dfd3713e118b::t_441dfda23341a4 23-25
+agent-system/agents/supervisor_agent.py
+  s_00dfd3713e118b::t_708e83ec98bbd5 26-27
+agent-system/agents/hr_agent.py
+  s_00dfd3713e118b::t_708e83ec98bbd5 22-25
+.dockerignore
+  s_00dfd3713e118b::t_0f04a5c25855f8 1-9
+ticket-and-leave-manager-service/Dockerfile
+  s_00dfd3713e118b::t_49ec2862e8593c 1-32
+docker-compose.yml
+  s_00dfd3713e118b::t_c9bb5687b867f1 1-3,6-17,19-34,45-46
+  s_00dfd3713e118b::t_181bdbb0bab42b 4-5
+  s_00dfd3713e118b::t_ad7bcbcac91e20 18
+  s_00dfd3713e118b::t_f1068e2c7b305f 35-44
+demo-ui/Dockerfile
+  s_00dfd3713e118b::t_6ddfc2faffbf39 1-15
+demo-ui/app.py
+  s_00dfd3713e118b::t_d28eddc15e1091 1-164
+agent-system/Dockerfile
+  s_00dfd3713e118b::t_d3d6da4e32d923 1-31
+uv.lock
+  s_00dfd3713e118b::t_b31a60b44d3737 18,49,265-273,685-702,1814-1825
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a582c393958fd05b9c6823c46325c5989312092",
+  "prompts": {},
+  "sessions": {
+    "s_00dfd3713e118b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "298bf4e9-b533-4342-9465-8d69444118f5",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
