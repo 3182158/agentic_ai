@@ -1,0 +1,19 @@
+docker-compose.yml
+  s_00dfd3713e118b::t_6f4443f91d251a 29-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25cb1ea37c949311fd9db0c92e9b23157c15ac91",
+  "prompts": {},
+  "sessions": {
+    "s_00dfd3713e118b": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "298bf4e9-b533-4342-9465-8d69444118f5",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
