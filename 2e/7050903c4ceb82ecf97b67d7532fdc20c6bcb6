@@ -1,0 +1,59 @@
+agent-system/config.py
+  s_1f8814249f9fc2::t_04c910083ee8f2 26-27,42-43
+agent-system/memory/service.py
+  s_b2a6e47101f0d8::t_707c533be56fd7 122,145
+  s_b2a6e47101f0d8::t_7cc79676df2005 15,69-72,119-121,142-143
+  s_b2a6e47101f0d8::t_02830a3bea6653 6,18-23,65-68,73-75,78-82,92-111,113-118,123-141
+  s_b2a6e47101f0d8::t_308e00da141ef7 16-17
+agent-system/tests/test_multi_agent.py
+  s_1f8814249f9fc2::t_a8d1e1711a91e4 1-55
+agent-system/agents/supervisor_agent.py
+  s_1f8814249f9fc2::t_579d623cd7eb16 1-81
+agent-system/agents/hr_agent.py
+  s_1f8814249f9fc2::t_47e73b7eb9e16f 1-5,11-26,32-36,38-55
+  s_1f8814249f9fc2::t_a41d4f56ac3556 6-10,27-31,37
+agent-system/README.md
+  s_b2a6e47101f0d8::t_8a1852cb925b99 56-57
+  s_1f8814249f9fc2::t_f073785acee959 33-34
+agent-system/agents/it_agent.py
+  s_1f8814249f9fc2::t_a41d4f56ac3556 6-10,27-31,37
+  s_1f8814249f9fc2::t_81a62c7a462cde 1-5,11-26,32-36,38-56
+agent-system/agents/agent.py
+  s_1f8814249f9fc2::t_a41d4f56ac3556 19-20,82-90,103-109
+  s_1f8814249f9fc2::t_c9a00b83cc0ff4 21,102,110-113
+  s_1f8814249f9fc2::t_86302c9e5721b7 62-81,91-101,114-120,135-136,174
+agent-system/tests/test_streamlit_app.py
+  s_b2a6e47101f0d8::t_b02951476dc399 262-333
+  s_b2a6e47101f0d8::t_8a1852cb925b99 252
+agent-system/streamlit_app.py
+  s_b2a6e47101f0d8::t_4aca1544a3e0ed 140-142,158,349
+  s_b2a6e47101f0d8::t_7cc79676df2005 165-179,184-198,208-211,351
+  s_b2a6e47101f0d8::t_8a1852cb925b99 19,136-138,146-147,149,151-157,159-164,180-183,199-207,212-218,221,321,325
+agent-system/tests/test_hitl.py
+  s_b2a6e47101f0d8::t_4aca1544a3e0ed 9,165,195
+  s_b2a6e47101f0d8::t_805ab48a6099ef 1-3,5,98-164,166-194,196-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e7050903c4ceb82ecf97b67d7532fdc20c6bcb6",
+  "prompts": {},
+  "sessions": {
+    "s_1f8814249f9fc2": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "dc097d16-86d4-4fad-a1eb-fceb661efd3f",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    },
+    "s_b2a6e47101f0d8": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "08407482-1bb5-4fd1-befa-594d35efd688",
+        "model": "unknown"
+      },
+      "human_author": "Amritpal Singh <Amritpal.Singh2.Contractor@pepsico.com>"
+    }
+  }
+}
